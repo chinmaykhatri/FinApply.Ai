@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS applications (
   target_role TEXT NOT NULL,
   essay TEXT NOT NULL,
   status TEXT NOT NULL DEFAULT 'applied'
-    CHECK (status IN ('applied', 'dealroom_sent', 'submitted', 'scored', 'report_sent')),
+    CHECK (status IN ('applied', 'dealroom_sent', 'submitted', 'scored', 'report_sent', 'rejected')),
   deal_room_token TEXT UNIQUE,
   report_token TEXT UNIQUE,
   created_at TIMESTAMPTZ DEFAULT now(),
@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS applications (
 CREATE TABLE IF NOT EXISTS simulations (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   application_id UUID NOT NULL REFERENCES applications(id) ON DELETE CASCADE,
+  case_code TEXT,
   content TEXT NOT NULL,
   word_count INTEGER DEFAULT 0,
   time_taken_seconds INTEGER DEFAULT 0,

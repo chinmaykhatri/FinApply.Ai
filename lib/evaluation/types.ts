@@ -1,10 +1,10 @@
 /* ═══════════════════════════════════════════════
    AI Evaluation Types — FinApply.ai
-   Claude-powered FISS scoring pipeline
+   Gemini-powered FISS scoring pipeline
    ═══════════════════════════════════════════════ */
 
-/** Raw JSON response from Claude evaluation */
-export interface ClaudeEvaluationResult {
+/** Raw JSON response from Gemini evaluation */
+export interface GeminiEvaluationResult {
   fr_score: number;
   st_score: number;
   ri_score: number;
@@ -44,6 +44,9 @@ export interface ClaudeEvaluationResult {
   word_count_assessment: string;
   time_efficiency_note: string;
 }
+
+/** @deprecated Use GeminiEvaluationResult — alias kept for backward compatibility */
+export type ClaudeEvaluationResult = GeminiEvaluationResult;
 
 /** Input required to build the evaluation prompt */
 export interface EvaluationInput {

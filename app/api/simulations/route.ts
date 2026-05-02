@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { application_id, content, word_count, time_taken_seconds, started_at } = body;
+    const { application_id, case_code, content, word_count, time_taken_seconds, started_at } = body;
 
     if (!application_id || !content) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -18,6 +18,7 @@ export async function POST(request: NextRequest) {
       .from('simulations')
       .insert({
         application_id,
+        case_code: case_code || null,
         content,
         word_count: word_count || 0,
         time_taken_seconds: time_taken_seconds || 0,
