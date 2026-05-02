@@ -1,14 +1,17 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+function getSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+}
 
 // POST: Log a calibration override
 export async function POST(req: Request) {
   try {
+    const supabase = getSupabase();
     const body = await req.json();
     const {
       application_id,
@@ -53,6 +56,7 @@ export async function POST(req: Request) {
 // GET: Retrieve calibration history for a candidate
 export async function GET(req: Request) {
   try {
+    const supabase = getSupabase();
     const { searchParams } = new URL(req.url);
     const applicationId = searchParams.get('application_id');
 

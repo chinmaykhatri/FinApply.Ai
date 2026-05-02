@@ -5,7 +5,6 @@ import { buildEvaluationPrompt } from '@/lib/evaluation/prompt';
 import { getCaseByCode, resolveRoleTrack } from '@/lib/cases';
 import type { ClaudeEvaluationResult } from '@/lib/evaluation/types';
 
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 /* POST /api/admin/evaluate — AI-evaluate a candidate's submission */
 export async function POST(request: NextRequest) {
@@ -57,6 +56,7 @@ export async function POST(request: NextRequest) {
     });
 
     // 5. Call Claude
+    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
     const message = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 4096,
