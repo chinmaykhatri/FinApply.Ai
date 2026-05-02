@@ -8,7 +8,7 @@ FinApply.ai is an AI-powered assessment platform that evaluates candidates for f
 
 ## ✨ Live Demo
 
-🌐 **[finapply.vercel.app](https://finapply.vercel.app)**
+🌐 **[finapply-ai-delta.vercel.app](https://finapply-ai-delta.vercel.app)**
 
 ---
 
