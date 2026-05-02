@@ -6,9 +6,9 @@ export default function LogoReveal({ onComplete }: { onComplete: () => void }) {
   const [phase, setPhase] = useState<'mark' | 'text' | 'fadeout'>('mark');
 
   useEffect(() => {
-    const t1 = setTimeout(() => setPhase('text'), 600);
-    const t2 = setTimeout(() => setPhase('fadeout'), 2200);
-    const t3 = setTimeout(() => onComplete(), 3000);
+    const t1 = setTimeout(() => setPhase('text'), 400);
+    const t2 = setTimeout(() => setPhase('fadeout'), 1200);
+    const t3 = setTimeout(() => onComplete(), 1800);
 
     return () => {
       clearTimeout(t1);
@@ -17,9 +17,14 @@ export default function LogoReveal({ onComplete }: { onComplete: () => void }) {
     };
   }, [onComplete]);
 
+  // Click to skip
+  const handleSkip = () => onComplete();
+
   return (
     <div
+      onClick={handleSkip}
       style={{
+        cursor: 'pointer',
         position: 'fixed',
         inset: 0,
         zIndex: 9999,
