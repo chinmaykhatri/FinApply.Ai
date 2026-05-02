@@ -9,6 +9,7 @@ import type { DealCase } from '@/lib/cases';
 const TOTAL_TIME = 90 * 60; // 90 minutes in seconds
 const AUTOSAVE_INTERVAL = 30000; // 30 seconds
 const PRACTICE_TIME = 10 * 60; // 10 minutes
+const MAX_TAB_VIOLATIONS = 3; // Auto-submit after 3 tab switches
 
 const GUIDE_TABS = [
   {
@@ -54,10 +55,20 @@ export default function DealRoomPage() {
   const [saveError, setSaveError] = useState(false);
   const [practiceContent, setPracticeContent] = useState('');
   const [practiceTimeLeft, setPracticeTimeLeft] = useState(PRACTICE_TIME);
+  // Proctoring state
+  const [tabViolations, setTabViolations] = useState(0);
+  const [showViolationWarning, setShowViolationWarning] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [webcamStream, setWebcamStream] = useState<MediaStream | null>(null);
+  const [webcamError, setWebcamError] = useState(false);
+  const [proctorReady, setProcterReady] = useState(false);
   const startedAt = useRef<string>('');
   const targetRoleRef = useRef<string>('Investment Banking Analyst');
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
   const alertPlayedRef = useRef(false);
+  const webcamRef = useRef<HTMLVideoElement>(null);
+  const violationLog = useRef<Array<{type: string; time: string}>>([]);
+  const autoSubmitRef = useRef<() => void>(() => {});
 
   // Validate token on mount
   useEffect(() => {
@@ -161,6 +172,110 @@ export default function DealRoomPage() {
     return () => clearInterval(interval);
   }, [phase]);
 
+  // ── PROCTORING: Tab/Window switch detection ──
+  useEffect(() => {
+    if (phase !== 'active') return;
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        const violation = { type: 'tab_switch', time: new Date().toISOString() };
+        violationLog.current.push(violation);
+        setTabViolations(prev => {
+          const next = prev + 1;
+          setShowViolationWarning(true);
+          if (next >= MAX_TAB_VIOLATIONS) {
+            // Auto-submit on max violations
+            setTimeout(() => autoSubmitRef.current(), 500);
+          }
+          return next;
+        });
+      }
+    };
+
+    const handleBlur = () => {
+      if (phase === 'active') {
+        violationLog.current.push({ type: 'window_blur', time: new Date().toISOString() });
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('blur', handleBlur);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('blur', handleBlur);
+    };
+  }, [phase]);
+
+  // ── PROCTORING: Prevent page close ──
+  useEffect(() => {
+    if (phase !== 'active') return;
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      return '';
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [phase]);
+
+  // ── PROCTORING: Fullscreen detection ──
+  useEffect(() => {
+    if (phase !== 'active') return;
+    const handleFullscreenChange = () => {
+      const isFull = !!document.fullscreenElement;
+      setIsFullscreen(isFull);
+      if (!isFull && phase === 'active') {
+        violationLog.current.push({ type: 'fullscreen_exit', time: new Date().toISOString() });
+      }
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, [phase]);
+
+  // ── PROCTORING: Webcam init ──
+  const initWebcam = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { width: 160, height: 120, facingMode: 'user' },
+        audio: false,
+      });
+      setWebcamStream(stream);
+      setWebcamError(false);
+      if (webcamRef.current) {
+        webcamRef.current.srcObject = stream;
+      }
+    } catch {
+      setWebcamError(true);
+      // Camera denied — still allow exam but log it
+      violationLog.current.push({ type: 'camera_denied', time: new Date().toISOString() });
+    }
+  }, []);
+
+  // Attach stream to video element when ref is available
+  useEffect(() => {
+    if (webcamRef.current && webcamStream) {
+      webcamRef.current.srcObject = webcamStream;
+    }
+  }, [webcamStream]);
+
+  // Cleanup webcam on unmount or phase change
+  useEffect(() => {
+    return () => {
+      if (webcamStream) {
+        webcamStream.getTracks().forEach(t => t.stop());
+      }
+    };
+  }, [webcamStream]);
+
+  // Enter fullscreen
+  const enterFullscreen = useCallback(async () => {
+    try {
+      await document.documentElement.requestFullscreen();
+      setIsFullscreen(true);
+    } catch {
+      // Fullscreen not supported or denied
+    }
+  }, []);
+
   // Practice warm-up timer
   useEffect(() => {
     if (phase !== 'warmup') return;
@@ -190,10 +305,14 @@ export default function DealRoomPage() {
     return '#fff';
   };
 
-  const handleStart = () => {
+  const handleStart = async () => {
     startedAt.current = new Date().toISOString();
+    // Initialize proctoring
+    await initWebcam();
+    await enterFullscreen();
+    setProcterReady(true);
     setPhase('active');
-    setTimeout(() => textAreaRef.current?.focus(), 100);
+    setTimeout(() => textAreaRef.current?.focus(), 200);
   };
 
   const handleStartPractice = () => {
@@ -235,6 +354,8 @@ export default function DealRoomPage() {
             word_count: wordCount,
             time_taken_seconds: TOTAL_TIME - timeLeft,
             started_at: startedAt.current,
+            tab_violations: tabViolations,
+            violation_log: violationLog.current,
           }),
         });
         if (res.ok) success = true;
@@ -258,11 +379,18 @@ export default function DealRoomPage() {
         }));
       } catch { /* last resort failed */ }
     }
-    // Clear session from localStorage on successful submit
+    // Clear session + stop webcam + exit fullscreen
     try { localStorage.removeItem(`finapply_session_${token}`); } catch {}
+    if (webcamStream) webcamStream.getTracks().forEach(t => t.stop());
+    if (document.fullscreenElement) {
+      try { document.exitFullscreen(); } catch {}
+    }
     setPhase('submitted');
     setSubmitting(false);
-  }, [content, wordCount, timeLeft, applicationId, token, activeCase]);
+  }, [content, wordCount, timeLeft, applicationId, token, activeCase, tabViolations, webcamStream]);
+
+  // Keep autoSubmitRef in sync for proctoring hooks
+  autoSubmitRef.current = handleAutoSubmit;
 
   const handleSubmit = async () => {
     setShowSubmitModal(false);
@@ -332,6 +460,20 @@ export default function DealRoomPage() {
                 <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.60)', lineHeight: 1.5 }}>{item.text}</p>
               </div>
             ))}
+
+            {/* Proctoring notice */}
+            <div style={{
+              marginTop: 24, padding: 16, borderRadius: 12,
+              background: 'rgba(220,38,38,0.06)', border: '1px solid rgba(220,38,38,0.15)',
+            }}>
+              <p style={{ fontSize: 13, fontWeight: 600, color: '#DC2626', marginBottom: 8 }}>🛡️ Proctored Environment</p>
+              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.50)', lineHeight: 1.6, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <span>• Your camera will be activated for identity verification</span>
+                <span>• The exam runs in fullscreen mode — exiting is logged</span>
+                <span>• Switching tabs or windows is flagged as a violation</span>
+                <span>• After {MAX_TAB_VIOLATIONS} tab violations, your work auto-submits</span>
+              </div>
+            </div>
           </div>
 
           <div style={{ marginTop: 40, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
@@ -467,6 +609,26 @@ export default function DealRoomPage() {
           >
             {activeCase?.code}
           </span>
+          {/* Proctoring status indicators */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{
+              fontSize: 10, fontWeight: 500, padding: '2px 8px', borderRadius: 100,
+              background: webcamStream ? 'rgba(22,163,74,0.12)' : 'rgba(220,38,38,0.12)',
+              border: `1px solid ${webcamStream ? 'rgba(22,163,74,0.25)' : 'rgba(220,38,38,0.25)'}`,
+              color: webcamStream ? '#16A34A' : '#DC2626',
+            }}>
+              {webcamStream ? '🔴 REC' : '⚠ CAM OFF'}
+            </span>
+            {tabViolations > 0 && (
+              <span style={{
+                fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 100,
+                background: 'rgba(220,38,38,0.12)', border: '1px solid rgba(220,38,38,0.25)',
+                color: '#DC2626',
+              }}>
+                ⚠ {tabViolations}/{MAX_TAB_VIOLATIONS} violations
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Timer + Actions */}
@@ -843,6 +1005,117 @@ Structure your response with clear sections:
         </div>
       </Modal>
 
+      {/* ── Tab Violation Warning Overlay ── */}
+      {showViolationWarning && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 9999,
+          background: 'rgba(0,0,0,0.92)', display: 'flex',
+          alignItems: 'center', justifyContent: 'center',
+        }}>
+          <div style={{ maxWidth: 480, textAlign: 'center', padding: 40 }}>
+            <div style={{ fontSize: 56, marginBottom: 16 }}>⚠️</div>
+            <h2 style={{ fontSize: 24, fontWeight: 700, color: '#DC2626', marginBottom: 12 }}>
+              Tab Switch Detected
+            </h2>
+            <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.70)', lineHeight: 1.6, marginBottom: 8 }}>
+              Leaving the exam window is a <strong style={{ color: '#fff' }}>proctoring violation</strong>.
+              This has been logged and will be visible in your report.
+            </p>
+            <div style={{
+              display: 'inline-block', padding: '8px 20px', borderRadius: 100,
+              background: tabViolations >= MAX_TAB_VIOLATIONS ? 'rgba(220,38,38,0.15)' : 'rgba(217,119,6,0.12)',
+              border: `1px solid ${tabViolations >= MAX_TAB_VIOLATIONS ? 'rgba(220,38,38,0.40)' : 'rgba(217,119,6,0.30)'}`,
+              color: tabViolations >= MAX_TAB_VIOLATIONS ? '#DC2626' : '#D97706',
+              fontSize: 14, fontWeight: 600, margin: '16px 0',
+            }}>
+              Violation {tabViolations} of {MAX_TAB_VIOLATIONS}
+            </div>
+            {tabViolations >= MAX_TAB_VIOLATIONS ? (
+              <p style={{ fontSize: 14, color: '#DC2626', fontWeight: 600 }}>
+                Maximum violations reached. Your work is being auto-submitted.
+              </p>
+            ) : (
+              <>
+                <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.40)', marginBottom: 24 }}>
+                  {MAX_TAB_VIOLATIONS - tabViolations} violation{MAX_TAB_VIOLATIONS - tabViolations !== 1 ? 's' : ''} remaining before auto-submission.
+                </p>
+                <PillButton variant="primary" onClick={() => { setShowViolationWarning(false); enterFullscreen(); }}>
+                  Return to Exam
+                </PillButton>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Webcam Feed (bottom-right corner) ── */}
+      {phase === 'active' && (
+        <div style={{
+          position: 'fixed', bottom: 16, right: 16, zIndex: 100,
+          borderRadius: 12, overflow: 'hidden',
+          border: `2px solid ${webcamStream ? 'rgba(22,163,74,0.40)' : 'rgba(220,38,38,0.40)'}`,
+          background: '#000', boxShadow: '0 4px 24px rgba(0,0,0,0.60)',
+        }}>
+          {webcamStream ? (
+            <video
+              ref={webcamRef}
+              autoPlay
+              playsInline
+              muted
+              style={{ width: 160, height: 120, objectFit: 'cover', display: 'block' }}
+            />
+          ) : (
+            <div style={{
+              width: 160, height: 120, display: 'flex',
+              alignItems: 'center', justifyContent: 'center',
+              background: 'rgba(220,38,38,0.06)',
+            }}>
+              <span style={{ fontSize: 11, color: '#DC2626', textAlign: 'center', padding: 8 }}>
+                📷 Camera denied<br/>Flagged in report
+              </span>
+            </div>
+          )}
+          <div style={{
+            position: 'absolute', top: 6, left: 6,
+            display: 'flex', alignItems: 'center', gap: 4,
+          }}>
+            <div style={{
+              width: 8, height: 8, borderRadius: '50%',
+              background: webcamStream ? '#DC2626' : '#666',
+              animation: webcamStream ? 'blink 1.5s infinite' : 'none',
+            }} />
+            <span style={{ fontSize: 9, color: '#fff', fontWeight: 600, textShadow: '0 1px 4px rgba(0,0,0,0.80)' }}>
+              {webcamStream ? 'PROCTORED' : 'OFFLINE'}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* ── Fullscreen re-enter prompt ── */}
+      {phase === 'active' && !isFullscreen && !showViolationWarning && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, zIndex: 90,
+          padding: '8px 16px', background: 'rgba(217,119,6,0.12)',
+          borderBottom: '1px solid rgba(217,119,6,0.30)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12,
+        }}>
+          <span style={{ fontSize: 12, color: '#D97706', fontWeight: 500 }}>
+            ⚠ Fullscreen mode exited — this is being logged
+          </span>
+          <button
+            onClick={enterFullscreen}
+            style={{
+              fontSize: 11, fontWeight: 600, padding: '4px 14px',
+              borderRadius: 100, border: '1px solid rgba(217,119,6,0.40)',
+              background: 'rgba(217,119,6,0.15)', color: '#D97706',
+              cursor: 'pointer',
+            }}
+          >
+            Re-enter Fullscreen
+          </button>
+        </div>
+      )}
+
       <style jsx>{`
         .timer-pulse {
           animation: pulse 1s ease-in-out infinite;
@@ -850,6 +1123,10 @@ Structure your response with clear sections:
         @keyframes pulse {
           0%, 100% { opacity: 1; }
           50% { opacity: 0.5; }
+        }
+        @keyframes blink {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.3; }
         }
         @media (max-width: 768px) {
           div[style*="grid-template-columns"] {
