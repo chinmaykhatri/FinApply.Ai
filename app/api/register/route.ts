@@ -71,9 +71,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to submit registration' }, { status: 500 });
     }
 
-    // Send email notification to admin
+    // Send emails (non-blocking)
     try {
-      const { sendAdminNotification } = await import('@/lib/email');
+      const { sendAdminNotification, sendWelcomeEmail } = await import('@/lib/email');
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://finapply-ai-delta.vercel.app';
+
+      // Email 1: Welcome + Deal Room link to candidate
+      await sendWelcomeEmail({
+        full_name,
+        email,
+        deal_room_url: `${appUrl}/dealroom/${deal_room_token}`,
+      });
+
+      // Admin notification
       await sendAdminNotification({
         full_name,
         email,

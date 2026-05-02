@@ -66,7 +66,6 @@ export async function POST(request: NextRequest) {
         target_role,
         college_or_firm: college_or_firm || '',
         linkedin_url,
-        essay,
       });
     } catch (emailErr) {
       console.error('Admin notification email failed:', emailErr);

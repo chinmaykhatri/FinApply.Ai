@@ -39,16 +39,24 @@ export async function POST(request: NextRequest) {
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://finapply.vercel.app';
 
-    // Send email directly via Resend
+    // Send FISS report email
+    const roleTrack = app.target_role || 'Investment Banking';
     await sendReportEmail({
       full_name: app.full_name,
       email: app.email,
       fiss_score: report.total_score,
-      evaluator_summary: report.evaluator_summary || '',
-      standout_strength: report.standout_strength || '',
-      critical_gap: report.critical_gap || '',
+      percentile: report.percentile || 'Founding Cohort',
+      role_track: roleTrack,
+      fr_score: report.financial_reasoning?.score || 0,
+      fr_grade: report.financial_reasoning?.grade || 'N/A',
+      st_score: report.structured_thinking?.score || 0,
+      st_grade: report.structured_thinking?.grade || 'N/A',
+      ri_score: report.risk_identification?.score || 0,
+      ri_grade: report.risk_identification?.grade || 'N/A',
+      dc_score: report.decision_clarity?.score || 0,
+      dc_grade: report.decision_clarity?.grade || 'N/A',
+      one_liner: report.evaluator_summary || '',
       report_url: `${appUrl}/report/${app.report_token}`,
-      pdf_url: report.pdf_url || undefined,
       loom_url: report.loom_url || undefined,
     });
 
