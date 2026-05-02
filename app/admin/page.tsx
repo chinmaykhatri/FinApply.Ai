@@ -54,6 +54,9 @@ export default function AdminDashboard() {
   const [evaluating, setEvaluating] = useState<string | null>(null);
   const [generatingPdf, setGeneratingPdf] = useState<string | null>(null);
   const [sendingReport, setSendingReport] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [batchEvaluating, setBatchEvaluating] = useState(false);
 
   // Override form state
   const [overrideData, setOverrideData] = useState({
@@ -312,6 +315,48 @@ export default function AdminDashboard() {
     scored: candidates.filter((c) => c.status === 'scored' || c.status === 'report_sent').length,
   };
 
+  // Search & filter
+  const filteredCandidates = candidates.filter((c) => {
+    const q = searchQuery.toLowerCase();
+    const matchesSearch = !searchQuery ||
+      c.full_name.toLowerCase().includes(q) ||
+      c.email.toLowerCase().includes(q) ||
+      c.college_or_firm?.toLowerCase().includes(q);
+    const matchesStatus = statusFilter === 'all' || c.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
+
+  // Batch evaluate all pending
+  const handleBatchEvaluate = async () => {
+    const pending = candidates.filter(
+      (c) => c.status === 'submitted' && c.simulations && c.simulations.length > 0 && !c.fiss_reports?.length
+    );
+    if (pending.length === 0) return alert('No pending submissions to evaluate.');
+    if (!confirm(`Evaluate ${pending.length} candidates? This will call the AI for each.`)) return;
+
+    setBatchEvaluating(true);
+    let success = 0;
+    let fail = 0;
+
+    for (const c of pending) {
+      try {
+        const res = await fetch('/api/admin/evaluate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ application_id: c.id, simulation_id: c.simulations![0].id }),
+        });
+        if (res.ok) success++;
+        else fail++;
+      } catch {
+        fail++;
+      }
+    }
+
+    setBatchEvaluating(false);
+    alert(`Batch complete: ${success} scored, ${fail} failed.`);
+    fetchCandidates();
+  };
+
   /* ── Dimension editor helper ── */
   const DimensionEditor = ({ label, dim, onChange }: {
     label: string;
@@ -445,6 +490,47 @@ export default function AdminDashboard() {
           </div>
         </div>
 
+        {/* Search + Filter + Batch */}
+        <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
+          <input
+            id="admin-search-input"
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search name, email, college..."
+            style={{
+              flex: 1, minWidth: 200, padding: '10px 16px', fontSize: 13,
+              background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.10)',
+              borderRadius: 10, color: '#fff', outline: 'none', fontFamily: 'var(--font-family)',
+            }}
+          />
+          <select
+            id="admin-status-filter"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            style={{
+              padding: '10px 16px', fontSize: 13, background: '#111',
+              border: '1px solid rgba(255,255,255,0.10)', borderRadius: 10,
+              color: '#fff', outline: 'none', cursor: 'pointer',
+            }}
+          >
+            <option value="all">All Statuses</option>
+            <option value="applied">Applied</option>
+            <option value="dealroom_sent">Deal Room Sent</option>
+            <option value="submitted">Submitted</option>
+            <option value="scored">Scored</option>
+            <option value="report_sent">Report Sent</option>
+            <option value="rejected">Rejected</option>
+          </select>
+          <PillButton
+            variant="primary"
+            onClick={handleBatchEvaluate}
+            loading={batchEvaluating}
+          >
+            ⚡ Evaluate All ({candidates.filter(c => c.status === 'submitted' && !c.fiss_reports?.length).length})
+          </PillButton>
+        </div>
+
         {/* Table */}
         <div
           style={{
@@ -478,14 +564,14 @@ export default function AdminDashboard() {
               <div className="spinner" style={{ margin: '0 auto' }} />
               <p style={{ color: 'rgba(255,255,255,0.40)', marginTop: 16, fontSize: 14 }}>Loading candidates...</p>
             </div>
-          ) : candidates.length === 0 ? (
+          ) : filteredCandidates.length === 0 ? (
             <div style={{ padding: 60, textAlign: 'center' }}>
               <p style={{ color: 'rgba(255,255,255,0.40)', fontSize: 14 }}>
-                No applications yet. Share the landing page to start receiving candidates.
+                {candidates.length === 0 ? 'No applications yet. Share the landing page to start receiving candidates.' : 'No candidates match your search.'}
               </p>
             </div>
           ) : (
-            candidates.map((c) => (
+            filteredCandidates.map((c) => (
               <div
                 key={c.id}
                 style={{

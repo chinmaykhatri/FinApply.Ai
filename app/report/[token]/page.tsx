@@ -576,10 +576,45 @@ export default function ReportPage() {
           </div>
         )}
 
+        {/* Share Buttons */}
+        <div
+          style={{
+            marginTop: 48,
+            textAlign: 'center',
+            padding: '24px 0',
+            borderTop: '1px solid rgba(255,255,255,0.06)',
+          }}
+        >
+          <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', letterSpacing: 2, marginBottom: 16 }}>
+            SHARE YOUR SCORE
+          </p>
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+            <PillButton
+              variant="outline"
+              onClick={() => {
+                const url = encodeURIComponent(window.location.href);
+                window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${url}`, '_blank');
+              }}
+            >
+              Share on LinkedIn
+            </PillButton>
+            <PillButton
+              variant="outline"
+              onClick={() => {
+                const url = encodeURIComponent(window.location.href);
+                const text = encodeURIComponent(`Just scored ${report.total_score}/100 on my @FinApplyAI FISS assessment! 🎯`);
+                window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, '_blank');
+              }}
+            >
+              Share on X
+            </PillButton>
+          </div>
+        </div>
+
         {/* Footer */}
         <div
           style={{
-            marginTop: 60,
+            marginTop: 20,
             textAlign: 'center',
             borderTop: '1px solid rgba(255,255,255,0.08)',
             paddingTop: 40,

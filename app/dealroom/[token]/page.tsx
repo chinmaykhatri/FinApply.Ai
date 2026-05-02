@@ -57,6 +57,7 @@ export default function DealRoomPage() {
   const startedAt = useRef<string>('');
   const targetRoleRef = useRef<string>('Investment Banking Analyst');
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
+  const alertPlayedRef = useRef(false);
 
   // Validate token on mount
   useEffect(() => {
@@ -138,6 +139,21 @@ export default function DealRoomPage() {
         if (t <= 1) {
           handleAutoSubmit();
           return 0;
+        }
+        // Audio alert at 5 minutes remaining
+        if (t === 300 && !alertPlayedRef.current) {
+          alertPlayedRef.current = true;
+          try {
+            const ctx = new AudioContext();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.frequency.value = 880;
+            gain.gain.value = 0.3;
+            osc.start();
+            osc.stop(ctx.currentTime + 0.3);
+          } catch { /* Audio not available */ }
         }
         return t - 1;
       });

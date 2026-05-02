@@ -133,6 +133,30 @@ export async function POST(request: NextRequest) {
       .update({ status: 'scored', updated_at: new Date().toISOString() })
       .eq('id', application_id);
 
+    // 9. Auto-email FISS report to candidate (non-blocking)
+    try {
+      const { sendReportEmail } = await import('@/lib/email');
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://finapply-ai-delta.vercel.app';
+      await sendReportEmail({
+        full_name: app.full_name,
+        email: app.email,
+        fiss_score: evaluation.fiss_score,
+        evaluator_summary: evaluation.one_line_summary,
+        standout_strength: evaluation.standout_strength,
+        critical_gap: evaluation.critical_gap,
+        report_url: `${appUrl}/report/${app.report_token}`,
+      });
+
+      // Update status to report_sent since email was successful
+      await supabase
+        .from('applications')
+        .update({ status: 'report_sent', updated_at: new Date().toISOString() })
+        .eq('id', application_id);
+    } catch (emailErr) {
+      console.error('Auto-email failed (non-blocking):', emailErr);
+      // Scoring succeeded; email failure is non-critical
+    }
+
     return NextResponse.json({
       success: true,
       data: report,

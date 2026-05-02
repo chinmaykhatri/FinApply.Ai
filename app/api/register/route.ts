@@ -1,10 +1,21 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { Resend } from 'resend';
+import { rateLimit } from '@/lib/rate-limit';
 
 /* POST /api/register — Public registration (no beta gate) */
 export async function POST(request: NextRequest) {
   try {
+    // Rate limit: 5 registrations per minute per IP
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+    const { ok } = rateLimit(ip, 5, 60_000);
+    if (!ok) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please try again in a minute.' },
+        { status: 429, headers: { 'Retry-After': '60' } }
+      );
+    }
+
     const body = await request.json();
     const { full_name, email, college_or_firm, city, current_status, target_role, linkedin_url } = body;
 
@@ -85,6 +96,11 @@ export async function POST(request: NextRequest) {
       console.error('Email notification failed:', emailErr);
       // Don't fail the registration if email fails
     }
+
+    // Notify Slack (non-blocking)
+    import('@/lib/slack').then(({ notifySlack }) => {
+      notifySlack(`🔔 *New Registration*\n*Name:* ${full_name}\n*Email:* ${email}\n*Role:* ${target_role}\n*College:* ${college_or_firm}`).catch(() => {});
+    }).catch(() => {});
 
     return NextResponse.json({
       success: true,
