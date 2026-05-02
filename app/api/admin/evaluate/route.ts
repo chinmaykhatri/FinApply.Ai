@@ -54,39 +54,29 @@ export async function POST(request: NextRequest) {
       candidate_response: sim.content,
     });
 
-    // 5. Call Gemini 2.5 Pro
+    // 5. Call Gemini 2.5 Flash (fast, reliable, high quality)
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
     const model = genAI.getGenerativeModel({
-      model: 'gemini-2.5-pro-preview-05-06',
+      model: 'gemini-2.5-flash',
       generationConfig: {
         temperature: 0.3,
-        maxOutputTokens: 4096,
-        responseMimeType: 'application/json',
+        maxOutputTokens: 8192,
       },
     });
 
     const result = await model.generateContent(prompt);
     const responseText = result.response.text();
 
-    // 6. Parse response
+    // 6. Parse response — extract JSON from code blocks or raw text
     let evaluation: ClaudeEvaluationResult;
+    const jsonMatch = responseText.match(/```(?:json)?\s*([\s\S]*?)```/);
+    const jsonStr = jsonMatch ? jsonMatch[1].trim() : responseText.trim();
+
     try {
-      // Gemini with responseMimeType: 'application/json' returns clean JSON
-      evaluation = JSON.parse(responseText);
+      evaluation = JSON.parse(jsonStr);
     } catch {
-      // Fallback: try to extract JSON from markdown code blocks
-      const jsonMatch = responseText.match(/```(?:json)?\s*([\s\S]*?)```/);
-      if (jsonMatch) {
-        try {
-          evaluation = JSON.parse(jsonMatch[1].trim());
-        } catch {
-          console.error('Gemini response parse error. Raw:', responseText.slice(0, 500));
-          return NextResponse.json({ error: 'AI returned invalid JSON. Try again.' }, { status: 502 });
-        }
-      } else {
-        console.error('Gemini response parse error. Raw:', responseText.slice(0, 500));
-        return NextResponse.json({ error: 'AI returned invalid JSON. Try again.' }, { status: 502 });
-      }
+      console.error('Gemini response parse error. Raw:', responseText.slice(0, 500));
+      return NextResponse.json({ error: 'AI returned invalid JSON. Try again.' }, { status: 502 });
     }
 
     // 7. Insert into fiss_reports
