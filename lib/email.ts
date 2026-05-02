@@ -1,9 +1,25 @@
-import { Resend } from 'resend';
+import nodemailer from 'nodemailer';
 
-function getResend() {
-  const key = process.env.RESEND_API_KEY;
-  if (!key) throw new Error('RESEND_API_KEY is not set');
-  return new Resend(key);
+/* ── Gmail SMTP Transport ── */
+function getTransporter() {
+  const user = process.env.GMAIL_USER;
+  const pass = process.env.GMAIL_APP_PASSWORD;
+  if (!user || !pass) throw new Error('GMAIL_USER or GMAIL_APP_PASSWORD not set');
+
+  return nodemailer.createTransport({
+    service: 'gmail',
+    auth: { user, pass },
+  });
+}
+
+async function sendMail(to: string, subject: string, html: string) {
+  const transporter = getTransporter();
+  return transporter.sendMail({
+    from: `FinApply <${process.env.GMAIL_USER}>`,
+    to,
+    subject,
+    html,
+  });
 }
 
 /* ── Email Templates ── */
@@ -142,8 +158,6 @@ function reportHTML(data: {
 
 /* ── Public API ── */
 
-const FROM_EMAIL = 'FinApply <onboarding@resend.dev>';
-
 export async function sendAdminNotification(data: {
   full_name: string;
   email: string;
@@ -152,12 +166,11 @@ export async function sendAdminNotification(data: {
   linkedin_url?: string;
   essay?: string;
 }) {
-  return getResend().emails.send({
-    from: FROM_EMAIL,
-    to: process.env.ADMIN_EMAIL || 'chinmaykhatri495@gmail.com',
-    subject: `🔔 New Application — ${data.full_name} — ${data.target_role}`,
-    html: adminNotificationHTML(data),
-  });
+  return sendMail(
+    process.env.ADMIN_EMAIL || process.env.GMAIL_USER || 'chinmaykhatri495@gmail.com',
+    `🔔 New Application — ${data.full_name} — ${data.target_role}`,
+    adminNotificationHTML(data),
+  );
 }
 
 export async function sendAcceptanceEmail(data: {
@@ -166,21 +179,19 @@ export async function sendAcceptanceEmail(data: {
   target_role: string;
   deal_room_url: string;
 }) {
-  return getResend().emails.send({
-    from: FROM_EMAIL,
-    to: data.email,
-    subject: `You're in — Your Deal Room is ready, ${data.full_name}`,
-    html: acceptanceHTML(data),
-  });
+  return sendMail(
+    data.email,
+    `You're in — Your Deal Room is ready, ${data.full_name}`,
+    acceptanceHTML(data),
+  );
 }
 
 export async function sendRejectionEmail(data: { full_name: string; email: string }) {
-  return getResend().emails.send({
-    from: FROM_EMAIL,
-    to: data.email,
-    subject: 'FinApply Beta — Application Update',
-    html: rejectionHTML(data),
-  });
+  return sendMail(
+    data.email,
+    'FinApply Beta — Application Update',
+    rejectionHTML(data),
+  );
 }
 
 export async function sendReportEmail(data: {
@@ -194,12 +205,11 @@ export async function sendReportEmail(data: {
   pdf_url?: string;
   loom_url?: string;
 }) {
-  return getResend().emails.send({
-    from: FROM_EMAIL,
-    to: data.email,
-    subject: `Your FISS Score Report is Ready — ${data.fiss_score}/100`,
-    html: reportHTML(data),
-  });
+  return sendMail(
+    data.email,
+    `Your FISS Score Report is Ready — ${data.fiss_score}/100`,
+    reportHTML(data),
+  );
 }
 
 /* ── Follow-up / Outcome Tracking Emails ── */
@@ -258,10 +268,9 @@ export async function sendFollowUpEmail(data: {
     90: `Day 90 — Share your career progress`,
   };
 
-  return getResend().emails.send({
-    from: FROM_EMAIL,
-    to: data.email,
-    subject: subjects[data.milestone_day] || `Career Update — FinApply Check-in`,
-    html: followUpHTML(data),
-  });
+  return sendMail(
+    data.email,
+    subjects[data.milestone_day] || `Career Update — FinApply Check-in`,
+    followUpHTML(data),
+  );
 }

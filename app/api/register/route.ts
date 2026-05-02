@@ -1,6 +1,5 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { Resend } from 'resend';
 import { rateLimit } from '@/lib/rate-limit';
 
 /* POST /api/register — Public registration (no beta gate) */
@@ -74,24 +73,13 @@ export async function POST(request: NextRequest) {
 
     // Send email notification to admin
     try {
-      const resendKey = process.env.RESEND_API_KEY;
-      if (resendKey) {
-        const resend = new Resend(resendKey);
-        await resend.emails.send({
-          from: 'FinApply <onboarding@resend.dev>',
-          to: 'chinmay.finapply.ai@gmail.com',
-          subject: `🚀 New Registration — ${full_name} — ${target_role}`,
-          html: buildNotificationEmail({
-            full_name,
-            email,
-            college_or_firm,
-            city,
-            current_status,
-            target_role,
-            linkedin_url,
-          }),
-        });
-      }
+      const { sendAdminNotification } = await import('@/lib/email');
+      await sendAdminNotification({
+        full_name,
+        email,
+        target_role,
+        college_or_firm,
+      });
     } catch (emailErr) {
       console.error('Email notification failed:', emailErr);
       // Don't fail the registration if email fails
