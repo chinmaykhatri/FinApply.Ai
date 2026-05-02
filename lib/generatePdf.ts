@@ -1,0 +1,466 @@
+/* ═══════════════════════════════════════════════
+   FISS Report PDF Generator
+   Programmatic vector PDF — no html2canvas.
+   Produces a crisp, text-selectable, properly structured PDF.
+   ═══════════════════════════════════════════════ */
+
+import { jsPDF } from 'jspdf';
+import type { DimensionScore } from './types';
+
+interface ReportData {
+  total_score: number;
+  percentile: string;
+  financial_reasoning: DimensionScore;
+  structured_thinking: DimensionScore;
+  risk_identification: DimensionScore;
+  decision_clarity: DimensionScore;
+  standout_strength: string;
+  critical_gap: string;
+  evaluator_summary: string;
+}
+
+interface PdfOptions {
+  candidateName: string;
+  candidateCollege: string;
+  report: ReportData;
+  filename?: string;
+}
+
+/* ── Color helpers ─────────────────────────── */
+const hexToRgb = (hex: string): [number, number, number] => {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return [r, g, b];
+};
+
+/** Mix a color with a background at a given opacity (0–1) */
+const mixColor = (
+  fg: [number, number, number],
+  bg: [number, number, number],
+  opacity: number
+): [number, number, number] => [
+  Math.round(bg[0] + (fg[0] - bg[0]) * opacity),
+  Math.round(bg[1] + (fg[1] - bg[1]) * opacity),
+  Math.round(bg[2] + (fg[2] - bg[2]) * opacity),
+];
+
+const gradeColor = (grade: string): string => {
+  switch (grade) {
+    case 'Strong': return '#16A34A';
+    case 'Adequate': return '#2563EB';
+    case 'Developing': return '#D97706';
+    case 'Critical Gap': return '#DC2626';
+    default: return '#2563EB';
+  }
+};
+
+const overallGradeColor = (score: number): string => {
+  if (score >= 80) return '#16A34A';
+  if (score >= 60) return '#2563EB';
+  if (score >= 40) return '#D97706';
+  return '#DC2626';
+};
+
+// Dark background base for mixing
+const BG: [number, number, number] = [8, 8, 12];
+
+/* ── Main generator ────────────────────────── */
+export function generateFissReportPdf({ candidateName, candidateCollege, report, filename }: PdfOptions) {
+  const pdf = new jsPDF('p', 'mm', 'a4');
+  const pageW = pdf.internal.pageSize.getWidth();   // 210
+  const pageH = pdf.internal.pageSize.getHeight();  // 297
+  const margin = 20;
+  const contentW = pageW - margin * 2;
+  let y = 0;
+
+  const themeColor = overallGradeColor(report.total_score);
+  const [themeR, themeG, themeB] = hexToRgb(themeColor);
+  const themeRgb: [number, number, number] = [themeR, themeG, themeB];
+
+  /* ── Helper: add new page with dark bg + header accent ── */
+  const addDarkPage = () => {
+    pdf.addPage();
+    pdf.setFillColor(...BG);
+    pdf.rect(0, 0, pageW, pageH, 'F');
+    // Subtle header accent line
+    pdf.setDrawColor(themeR, themeG, themeB);
+    pdf.setLineWidth(0.5);
+    pdf.line(margin, 12, pageW - margin, 12);
+    y = 20;
+  };
+
+  /* ── Helper: check page overflow ──────────── */
+  const ensureSpace = (needed: number) => {
+    if (y + needed > pageH - 20) {
+      addDarkPage();
+    }
+  };
+
+  /* ── Helper: wrap text and return lines ───── */
+  const wrapText = (text: string, maxWidth: number, fontSize: number): string[] => {
+    pdf.setFontSize(fontSize);
+    return pdf.splitTextToSize(text, maxWidth);
+  };
+
+  /* ═══════════════════════════════════════════
+     PAGE 1: Header + Score + Summary
+     ═══════════════════════════════════════════ */
+
+  // Dark background
+  pdf.setFillColor(...BG);
+  pdf.rect(0, 0, pageW, pageH, 'F');
+
+  // Top accent bar
+  pdf.setFillColor(themeR, themeG, themeB);
+  pdf.rect(0, 0, pageW, 3, 'F');
+
+  // FinApply.ai branding
+  y = 18;
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(14);
+  pdf.setTextColor(255, 255, 255);
+  pdf.text('FinApply.ai', margin, y);
+
+  pdf.setFont('helvetica', 'normal');
+  pdf.setFontSize(8);
+  pdf.setTextColor(120, 120, 130);
+  pdf.text('FISS Report v1.0', pageW - margin, y, { align: 'right' });
+
+  // Thin separator
+  y += 6;
+  pdf.setDrawColor(40, 40, 50);
+  pdf.setLineWidth(0.3);
+  pdf.line(margin, y, pageW - margin, y);
+
+  // ── Section label
+  y += 16;
+  pdf.setFont('helvetica', 'normal');
+  pdf.setFontSize(8);
+  pdf.setTextColor(themeR, themeG, themeB);
+  pdf.text('FINANCIAL INTELLIGENCE SIMULATION SCORE', pageW / 2, y, { align: 'center' });
+
+  // ── Score circle
+  y += 18;
+  const circleX = pageW / 2;
+  const circleY = y;
+  const radius = 18;
+
+  // Outer ring
+  pdf.setDrawColor(themeR, themeG, themeB);
+  pdf.setLineWidth(2.5);
+  pdf.circle(circleX, circleY, radius);
+
+  // Inner subtle ring
+  pdf.setDrawColor(40, 40, 50);
+  pdf.setLineWidth(0.3);
+  pdf.circle(circleX, circleY, radius - 4);
+
+  // Score number
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(32);
+  pdf.setTextColor(255, 255, 255);
+  pdf.text(String(report.total_score), circleX, circleY + 4, { align: 'center' });
+
+  // "/100" label
+  pdf.setFont('helvetica', 'normal');
+  pdf.setFontSize(10);
+  pdf.setTextColor(100, 100, 110);
+  pdf.text('/ 100', circleX, circleY + 12, { align: 'center' });
+
+  // ── Percentile badge
+  y = circleY + radius + 10;
+  const percentileText = report.percentile;
+  pdf.setFontSize(9);
+  pdf.setFont('helvetica', 'bold');
+  const ptW = pdf.getTextWidth(percentileText) + 12;
+  const ptX = (pageW - ptW) / 2;
+
+  // Badge background (simulated 15% opacity via color mixing)
+  const badgeBg = mixColor(themeRgb, BG, 0.15);
+  pdf.setFillColor(...badgeBg);
+  pdf.roundedRect(ptX, y - 4, ptW, 10, 5, 5, 'F');
+
+  // Badge border
+  pdf.setDrawColor(themeR, themeG, themeB);
+  pdf.setLineWidth(0.3);
+  pdf.roundedRect(ptX, y - 4, ptW, 10, 5, 5, 'S');
+
+  // Badge text
+  pdf.setTextColor(themeR, themeG, themeB);
+  pdf.setFontSize(9);
+  pdf.text(percentileText, pageW / 2, y + 2.5, { align: 'center' });
+
+  // ── Candidate name
+  y += 18;
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(22);
+  pdf.setTextColor(255, 255, 255);
+  pdf.text(candidateName, pageW / 2, y, { align: 'center' });
+
+  y += 8;
+  pdf.setFont('helvetica', 'normal');
+  pdf.setFontSize(10);
+  pdf.setTextColor(120, 120, 130);
+  pdf.text(candidateCollege, pageW / 2, y, { align: 'center' });
+
+  // ── Separator
+  y += 12;
+  pdf.setDrawColor(40, 40, 50);
+  pdf.setLineWidth(0.3);
+  pdf.line(margin, y, pageW - margin, y);
+
+  // ── Evaluator Summary
+  y += 14;
+  pdf.setFont('helvetica', 'normal');
+  pdf.setFontSize(8);
+  pdf.setTextColor(120, 120, 130);
+  pdf.text('EVALUATOR SUMMARY', margin, y);
+
+  y += 8;
+  const summaryLines = wrapText(report.evaluator_summary, contentW - 20, 11);
+  const summaryBoxH = summaryLines.length * 5.5 + 10;
+
+  // Left accent bar
+  pdf.setFillColor(themeR, themeG, themeB);
+  pdf.rect(margin, y - 2, 2, summaryBoxH, 'F');
+
+  // Quote background
+  pdf.setFillColor(20, 20, 28);
+  pdf.roundedRect(margin + 4, y - 4, contentW - 4, summaryBoxH + 2, 3, 3, 'F');
+
+  // Opening quote mark (dimmed via color mix)
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(28);
+  const quoteColor = mixColor(themeRgb, [20, 20, 28], 0.3);
+  pdf.setTextColor(...quoteColor);
+  pdf.text('\u201C', margin + 8, y + 6);
+
+  // Summary text
+  pdf.setFont('helvetica', 'italic');
+  pdf.setFontSize(11);
+  pdf.setTextColor(230, 230, 235);
+  summaryLines.forEach((line: string, i: number) => {
+    pdf.text(line, margin + 10, y + 6 + i * 5.5);
+  });
+
+  /* ═══════════════════════════════════════════
+     DIMENSION BREAKDOWN
+     ═══════════════════════════════════════════ */
+  y += summaryBoxH + 14;
+  ensureSpace(140);
+
+  pdf.setFont('helvetica', 'normal');
+  pdf.setFontSize(8);
+  pdf.setTextColor(120, 120, 130);
+  pdf.text('DIMENSION BREAKDOWN', margin, y);
+  y += 8;
+
+  const dims: { name: string; data: DimensionScore }[] = [
+    { name: 'Financial Reasoning', data: report.financial_reasoning },
+    { name: 'Structured Thinking', data: report.structured_thinking },
+    { name: 'Risk Identification', data: report.risk_identification },
+    { name: 'Decision Clarity', data: report.decision_clarity },
+  ];
+
+  // Draw dimension cards in 2-column layout
+  const colW = (contentW - 8) / 2;
+  const cardPadding = 6;
+
+  for (let i = 0; i < dims.length; i += 2) {
+    const row = [dims[i], dims[i + 1]].filter(Boolean);
+
+    // Pre-calculate max card height for this row
+    let maxCardH = 0;
+    const cardHeights: number[] = [];
+    row.forEach((dim) => {
+      const rationaleLines = wrapText(dim.data.rationale, colW - cardPadding * 2 - 2, 8);
+      const evidenceLines = wrapText(dim.data.evidence, colW - cardPadding * 2 - 6, 7.5);
+      const improvementLines = wrapText(dim.data.improvement, colW - cardPadding * 2 - 2, 7.5);
+      const h = 12 + 8 + 10 + rationaleLines.length * 4 + 6 + evidenceLines.length * 3.5 + 8 + improvementLines.length * 3.5 + 8;
+      cardHeights.push(h);
+      if (h > maxCardH) maxCardH = h;
+    });
+
+    ensureSpace(maxCardH + 10);
+    const rowStartY = y;
+
+    row.forEach((dim, colIdx) => {
+      const cardX = margin + colIdx * (colW + 8);
+      let cardY = rowStartY;
+      const cardH = cardHeights[colIdx];
+
+      const rationaleLines = wrapText(dim.data.rationale, colW - cardPadding * 2 - 2, 8);
+      const evidenceLines = wrapText(dim.data.evidence, colW - cardPadding * 2 - 6, 7.5);
+      const improvementLines = wrapText(dim.data.improvement, colW - cardPadding * 2 - 2, 7.5);
+
+      const gc = gradeColor(dim.data.grade);
+      const [gR, gG, gB] = hexToRgb(gc);
+      const gRgb: [number, number, number] = [gR, gG, gB];
+
+      // Card background
+      pdf.setFillColor(16, 16, 22);
+      pdf.setDrawColor(35, 35, 45);
+      pdf.setLineWidth(0.3);
+      pdf.roundedRect(cardX, cardY, colW, cardH, 3, 3, 'FD');
+
+      // Title + score
+      cardY += 8;
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(10);
+      pdf.setTextColor(255, 255, 255);
+      pdf.text(dim.name, cardX + cardPadding, cardY);
+
+      pdf.setTextColor(200, 200, 210);
+      pdf.text(`${dim.data.score}/25`, cardX + colW - cardPadding, cardY, { align: 'right' });
+
+      // Score bar
+      cardY += 5;
+      const barW = colW - cardPadding * 2;
+      const barH = 2.5;
+      pdf.setFillColor(30, 30, 40);
+      pdf.roundedRect(cardX + cardPadding, cardY, barW, barH, 1, 1, 'F');
+      const filledW = (dim.data.score / 25) * barW;
+      pdf.setFillColor(gR, gG, gB);
+      pdf.roundedRect(cardX + cardPadding, cardY, filledW, barH, 1, 1, 'F');
+
+      // Grade badge (simulated opacity via color mixing)
+      cardY += 6;
+      const badgeText = dim.data.grade;
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(7);
+      const bW = pdf.getTextWidth(badgeText) + 6;
+      const badgeFill = mixColor(gRgb, [16, 16, 22], 0.15);
+      pdf.setFillColor(...badgeFill);
+      pdf.roundedRect(cardX + cardPadding, cardY - 2.5, bW, 6, 3, 3, 'F');
+      pdf.setDrawColor(gR, gG, gB);
+      pdf.setLineWidth(0.2);
+      pdf.roundedRect(cardX + cardPadding, cardY - 2.5, bW, 6, 3, 3, 'S');
+      pdf.setTextColor(gR, gG, gB);
+      pdf.text(badgeText, cardX + cardPadding + 3, cardY + 1);
+
+      // Rationale
+      cardY += 6;
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(8);
+      pdf.setTextColor(180, 180, 190);
+      rationaleLines.forEach((line: string, li: number) => {
+        pdf.text(line, cardX + cardPadding, cardY + li * 4);
+      });
+      cardY += rationaleLines.length * 4 + 3;
+
+      // Evidence quote
+      pdf.setFillColor(25, 25, 35);
+      const evH = evidenceLines.length * 3.5 + 4;
+      pdf.roundedRect(cardX + cardPadding, cardY - 2, colW - cardPadding * 2, evH, 2, 2, 'F');
+      pdf.setFont('helvetica', 'italic');
+      pdf.setFontSize(7.5);
+      pdf.setTextColor(140, 140, 150);
+      evidenceLines.forEach((line: string, li: number) => {
+        pdf.text(line, cardX + cardPadding + 3, cardY + 2 + li * 3.5);
+      });
+      cardY += evH + 4;
+
+      // "TO IMPROVE" section
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(7);
+      pdf.setTextColor(100, 100, 110);
+      pdf.text('TO IMPROVE', cardX + cardPadding, cardY);
+      cardY += 4;
+
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(7.5);
+      pdf.setTextColor(160, 160, 170);
+      improvementLines.forEach((line: string, li: number) => {
+        pdf.text(line, cardX + cardPadding, cardY + li * 3.5);
+      });
+    });
+
+    y = rowStartY + maxCardH + 8;
+  }
+
+  /* ═══════════════════════════════════════════
+     INSIGHTS: Standout Strength + Critical Gap
+     ═══════════════════════════════════════════ */
+  ensureSpace(60);
+
+  // Standout Strength
+  const strengthLines = wrapText(report.standout_strength, contentW - 14, 9);
+  const strengthH = strengthLines.length * 4.5 + 16;
+
+  // Background (simulated 8% green opacity)
+  const strengthBg = mixColor([22, 163, 74], BG, 0.08);
+  pdf.setFillColor(...strengthBg);
+  pdf.roundedRect(margin, y, contentW, strengthH, 3, 3, 'F');
+
+  // Left accent bar
+  pdf.setFillColor(22, 163, 74);
+  pdf.rect(margin, y, 2.5, strengthH, 'F');
+
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(7.5);
+  pdf.setTextColor(22, 163, 74);
+  pdf.text('\u2726  STANDOUT STRENGTH', margin + 8, y + 8);
+
+  pdf.setFont('helvetica', 'normal');
+  pdf.setFontSize(9);
+  pdf.setTextColor(200, 200, 210);
+  strengthLines.forEach((line: string, i: number) => {
+    pdf.text(line, margin + 8, y + 15 + i * 4.5);
+  });
+
+  y += strengthH + 6;
+  ensureSpace(60);
+
+  // Critical Gap
+  const gapLines = wrapText(report.critical_gap, contentW - 14, 9);
+  const gapH = gapLines.length * 4.5 + 16;
+
+  // Background (simulated 8% amber opacity)
+  const gapBg = mixColor([217, 119, 6], BG, 0.08);
+  pdf.setFillColor(...gapBg);
+  pdf.roundedRect(margin, y, contentW, gapH, 3, 3, 'F');
+
+  // Left accent bar
+  pdf.setFillColor(217, 119, 6);
+  pdf.rect(margin, y, 2.5, gapH, 'F');
+
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(7.5);
+  pdf.setTextColor(217, 119, 6);
+  pdf.text('\u26A0  CRITICAL GAP', margin + 8, y + 8);
+
+  pdf.setFont('helvetica', 'normal');
+  pdf.setFontSize(9);
+  pdf.setTextColor(200, 200, 210);
+  gapLines.forEach((line: string, i: number) => {
+    pdf.text(line, margin + 8, y + 15 + i * 4.5);
+  });
+
+  y += gapH + 16;
+
+  /* ═══════════════════════════════════════════
+     FOOTER
+     ═══════════════════════════════════════════ */
+  ensureSpace(30);
+
+  pdf.setDrawColor(40, 40, 50);
+  pdf.setLineWidth(0.3);
+  pdf.line(margin, y, pageW - margin, y);
+
+  y += 10;
+  pdf.setFont('helvetica', 'normal');
+  pdf.setFontSize(7);
+  pdf.setTextColor(80, 80, 90);
+  pdf.text('This report was generated by FinApply.ai \u00B7 FISS Score v1.0', pageW / 2, y, { align: 'center' });
+  y += 5;
+  pdf.setTextColor(60, 60, 70);
+  pdf.text('Evaluated by human + AI collaboration \u00B7 Not a guarantee of employment outcomes', pageW / 2, y, { align: 'center' });
+  y += 5;
+  pdf.setTextColor(50, 50, 60);
+  pdf.text(`Generated on ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`, pageW / 2, y, { align: 'center' });
+
+  /* ── Save ─────────────────────────────────── */
+  const safeName = (candidateName || 'Candidate').replace(/\s+/g, '_');
+  pdf.save(filename || `FISS_Report_${safeName}.pdf`);
+}

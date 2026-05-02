@@ -1,0 +1,91 @@
+{
+  "name": "FinApply — New Application Notification",
+  "flow": [
+    {
+      "id": 1,
+      "module": "gateway:CustomWebHook",
+      "version": 1,
+      "parameters": {
+        "hook": null
+      },
+      "mapper": {},
+      "metadata": {
+        "designer": {
+          "x": 0,
+          "y": 0,
+          "name": "Tally Webhook"
+        },
+        "restore": {},
+        "expect": [
+          { "name": "full_name", "type": "text", "label": "Full Name" },
+          { "name": "email", "type": "text", "label": "Email" },
+          { "name": "linkedin_url", "type": "text", "label": "LinkedIn URL" },
+          { "name": "college_or_firm", "type": "text", "label": "College or Firm" },
+          { "name": "city", "type": "text", "label": "City" },
+          { "name": "current_status", "type": "text", "label": "Current Status" },
+          { "name": "target_role", "type": "text", "label": "Target Role" },
+          { "name": "essay", "type": "text", "label": "Essay" }
+        ]
+      }
+    },
+    {
+      "id": 2,
+      "module": "http:ActionSendData",
+      "version": 3,
+      "parameters": {},
+      "mapper": {
+        "url": "https://YOUR-DOMAIN.vercel.app/api/webhooks/make/application",
+        "method": "post",
+        "headers": [],
+        "qs": [],
+        "bodyType": "raw",
+        "parseResponse": true,
+        "contentType": "application/json",
+        "body": "{\n  \"full_name\": \"{{1.full_name}}\",\n  \"email\": \"{{1.email}}\",\n  \"linkedin_url\": \"{{1.linkedin_url}}\",\n  \"college_or_firm\": \"{{1.college_or_firm}}\",\n  \"city\": \"{{1.city}}\",\n  \"current_status\": \"{{1.current_status}}\",\n  \"target_role\": \"{{1.target_role}}\",\n  \"essay\": \"{{1.essay}}\",\n  \"webhook_secret\": \"finapply-webhook-2026-secret\"\n}"
+      },
+      "metadata": {
+        "designer": {
+          "x": 300,
+          "y": 0,
+          "name": "POST to FinApply API"
+        }
+      }
+    },
+    {
+      "id": 3,
+      "module": "email:ActionSendEmail",
+      "version": 3,
+      "parameters": {
+        "account": null
+      },
+      "mapper": {
+        "to": "chinmaykhatri495@gmail.com",
+        "subject": "🔔 New Application — {{1.full_name}} — {{1.target_role}}",
+        "html": "<div style=\"font-family: -apple-system, sans-serif; max-width: 600px; margin: 0 auto; background: #000; color: #fff; padding: 40px; border-radius: 16px;\">\n  <div style=\"border-bottom: 1px solid #222; padding-bottom: 20px; margin-bottom: 24px;\">\n    <h1 style=\"font-size: 20px; font-weight: 600; margin: 0;\">New Beta Application</h1>\n    <p style=\"font-size: 12px; color: #666; margin-top: 4px;\">FinApply.ai · Founding Cohort</p>\n  </div>\n  <table style=\"width: 100%; border-collapse: collapse;\">\n    <tr><td style=\"padding: 8px 0; color: #666; font-size: 13px;\">Name</td><td style=\"padding: 8px 0; color: #fff; font-size: 13px; font-weight: 500;\">{{1.full_name}}</td></tr>\n    <tr><td style=\"padding: 8px 0; color: #666; font-size: 13px;\">Email</td><td style=\"padding: 8px 0; color: #fff; font-size: 13px;\">{{1.email}}</td></tr>\n    <tr><td style=\"padding: 8px 0; color: #666; font-size: 13px;\">Role</td><td style=\"padding: 8px 0; color: #2563EB; font-size: 13px; font-weight: 500;\">{{1.target_role}}</td></tr>\n    <tr><td style=\"padding: 8px 0; color: #666; font-size: 13px;\">College/Firm</td><td style=\"padding: 8px 0; color: #fff; font-size: 13px;\">{{1.college_or_firm}}</td></tr>\n    <tr><td style=\"padding: 8px 0; color: #666; font-size: 13px;\">City</td><td style=\"padding: 8px 0; color: #fff; font-size: 13px;\">{{1.city}}</td></tr>\n    <tr><td style=\"padding: 8px 0; color: #666; font-size: 13px;\">LinkedIn</td><td style=\"padding: 8px 0; font-size: 13px;\"><a href=\"{{1.linkedin_url}}\" style=\"color: #2563EB;\">Profile →</a></td></tr>\n  </table>\n  <div style=\"margin-top: 24px; padding: 16px; background: #111; border-radius: 10px;\">\n    <p style=\"font-size: 11px; color: #666; margin: 0 0 6px;\">ESSAY</p>\n    <p style=\"font-size: 13px; color: #999; line-height: 1.5; margin: 0;\">{{1.essay}}</p>\n  </div>\n  <div style=\"margin-top: 24px; text-align: center;\">\n    <a href=\"https://YOUR-DOMAIN.vercel.app/admin\" style=\"display: inline-block; padding: 10px 24px; background: #2563EB; color: #fff; border-radius: 100px; text-decoration: none; font-size: 13px; font-weight: 500;\">Review in Admin →</a>\n  </div>\n</div>"
+      },
+      "metadata": {
+        "designer": {
+          "x": 600,
+          "y": 0,
+          "name": "Email Admin Notification"
+        }
+      }
+    }
+  ],
+  "metadata": {
+    "version": 1,
+    "scenario": {
+      "roundtrips": 1,
+      "maxErrors": 3,
+      "autoCommit": true,
+      "autoCommitTriggerLast": true,
+      "sequential": false,
+      "confidential": false,
+      "dataloss": false,
+      "dlq": false
+    },
+    "designer": {
+      "orphans": []
+    }
+  }
+}
