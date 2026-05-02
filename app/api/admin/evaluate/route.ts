@@ -1,10 +1,9 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import Anthropic from '@anthropic-ai/sdk';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { buildEvaluationPrompt } from '@/lib/evaluation/prompt';
 import { getCaseByCode, resolveRoleTrack } from '@/lib/cases';
 import type { ClaudeEvaluationResult } from '@/lib/evaluation/types';
-
 
 /* POST /api/admin/evaluate — AI-evaluate a candidate's submission */
 export async function POST(request: NextRequest) {
@@ -55,26 +54,39 @@ export async function POST(request: NextRequest) {
       candidate_response: sim.content,
     });
 
-    // 5. Call Claude
-    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-    const message = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 4096,
-      messages: [{ role: 'user', content: prompt }],
+    // 5. Call Gemini 2.5 Pro
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+    const model = genAI.getGenerativeModel({
+      model: 'gemini-2.5-pro-preview-05-06',
+      generationConfig: {
+        temperature: 0.3,
+        maxOutputTokens: 4096,
+        responseMimeType: 'application/json',
+      },
     });
 
-    // 6. Parse response
-    const responseText = message.content
-      .filter((block): block is Anthropic.TextBlock => block.type === 'text')
-      .map((block) => block.text)
-      .join('');
+    const result = await model.generateContent(prompt);
+    const responseText = result.response.text();
 
+    // 6. Parse response
     let evaluation: ClaudeEvaluationResult;
     try {
+      // Gemini with responseMimeType: 'application/json' returns clean JSON
       evaluation = JSON.parse(responseText);
     } catch {
-      console.error('Claude response parse error. Raw:', responseText.slice(0, 500));
-      return NextResponse.json({ error: 'AI returned invalid JSON. Try again.' }, { status: 502 });
+      // Fallback: try to extract JSON from markdown code blocks
+      const jsonMatch = responseText.match(/```(?:json)?\s*([\s\S]*?)```/);
+      if (jsonMatch) {
+        try {
+          evaluation = JSON.parse(jsonMatch[1].trim());
+        } catch {
+          console.error('Gemini response parse error. Raw:', responseText.slice(0, 500));
+          return NextResponse.json({ error: 'AI returned invalid JSON. Try again.' }, { status: 502 });
+        }
+      } else {
+        console.error('Gemini response parse error. Raw:', responseText.slice(0, 500));
+        return NextResponse.json({ error: 'AI returned invalid JSON. Try again.' }, { status: 502 });
+      }
     }
 
     // 7. Insert into fiss_reports
