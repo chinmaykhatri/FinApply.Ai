@@ -26,8 +26,9 @@ export async function GET(
       return NextResponse.json({ error: 'Invalid or expired token' }, { status: 404 });
     }
 
-    // Only allow access if status is dealroom_sent (admin approved)
-    if (app.status !== 'dealroom_sent' && app.status !== 'submitted') {
+    // Allow access for registered, approved, or submitted users
+    const allowedStatuses = ['applied', 'dealroom_sent', 'submitted'];
+    if (!allowedStatuses.includes(app.status)) {
       return NextResponse.json({ error: 'Deal room access not yet granted' }, { status: 403 });
     }
 

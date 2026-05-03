@@ -90,8 +90,13 @@ export async function POST(request: NextRequest) {
         target_role,
         college_or_firm,
       });
-    } catch (emailErr) {
-      console.error('Email notification failed:', emailErr);
+    } catch (emailErr: unknown) {
+      const errMsg = emailErr instanceof Error ? emailErr.message : String(emailErr);
+      const errStack = emailErr instanceof Error ? emailErr.stack : '';
+      console.error('Email notification failed:', errMsg);
+      console.error('Email error stack:', errStack);
+      console.error('GMAIL_USER set:', !!process.env.GMAIL_USER);
+      console.error('GMAIL_APP_PASSWORD set:', !!process.env.GMAIL_APP_PASSWORD);
       // Don't fail the registration if email fails
     }
 
