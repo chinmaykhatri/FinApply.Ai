@@ -1,19 +1,27 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { applyRateLimit, sanitizeString, isValidEmail, auditLog } from '@/lib/security';
 
 /* POST /api/dashboard — Lookup user applications by email */
 export async function POST(request: NextRequest) {
   try {
-    const { email } = await request.json();
-
-    if (!email || typeof email !== 'string') {
-      return NextResponse.json({ error: 'Email is required' }, { status: 400 });
+    // Rate limit: aggressive — 10 per minute per IP (prevents email enumeration)
+    const limited = applyRateLimit(request, 'scrape');
+    if (limited) {
+      auditLog('api.rate_limited', { endpoint: '/api/dashboard' }, request);
+      return limited;
     }
 
-    const normalizedEmail = email.trim().toLowerCase();
+    const { email } = await request.json();
+
+    if (!email || !isValidEmail(email)) {
+      return NextResponse.json({ error: 'Valid email is required' }, { status: 400 });
+    }
+
+    const normalizedEmail = sanitizeString(email, 254).toLowerCase();
     const supabase = await createClient();
 
-    // Fetch all applications for this email
+    // Fetch applications — EXCLUDE sensitive tokens from response
     const { data: applications, error } = await supabase
       .from('applications')
       .select(`
@@ -22,8 +30,6 @@ export async function POST(request: NextRequest) {
         email,
         target_role,
         status,
-        deal_room_token,
-        report_token,
         created_at,
         updated_at
       `)
@@ -31,15 +37,16 @@ export async function POST(request: NextRequest) {
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Dashboard lookup error:', error);
+      console.error('Dashboard lookup error:', error.message);
       return NextResponse.json({ error: 'Failed to lookup applications' }, { status: 500 });
     }
 
     if (!applications || applications.length === 0) {
-      return NextResponse.json({ error: 'No applications found for this email' }, { status: 404 });
+      // Return generic message — don't confirm email existence
+      return NextResponse.json({ error: 'No applications found' }, { status: 404 });
     }
 
-    // For each application, check if there's a FISS report
+    // For each application, fetch report and simulation (without exposing tokens)
     const enriched = await Promise.all(
       applications.map(async (app) => {
         const { data: reports } = await supabase
@@ -58,6 +65,7 @@ export async function POST(request: NextRequest) {
 
         return {
           ...app,
+          // SECURITY: deal_room_token and report_token are deliberately EXCLUDED
           report: reports?.[0] || null,
           simulation: sims?.[0] || null,
         };

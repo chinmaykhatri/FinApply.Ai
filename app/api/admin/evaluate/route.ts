@@ -4,10 +4,24 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { buildEvaluationPrompt } from '@/lib/evaluation/prompt';
 import { getCaseByCode, resolveRoleTrack } from '@/lib/cases';
 import type { ClaudeEvaluationResult } from '@/lib/evaluation/types';
+import { verifyInternalAuth, applyRateLimit, auditLog } from '@/lib/security';
 
 /* POST /api/admin/evaluate — AI-evaluate a candidate's submission */
 export async function POST(request: NextRequest) {
   try {
+    // Allow internal server-to-server calls (from /api/simulations auto-trigger)
+    // Middleware handles admin browser sessions; this handles programmatic access
+    const isInternalCall = verifyInternalAuth(request);
+    if (!isInternalCall) {
+      // If not internal, middleware will have already validated admin session
+      // But add rate limiting for safety
+      const limited = applyRateLimit(request, 'ai');
+      if (limited) {
+        auditLog('api.rate_limited', { endpoint: '/api/admin/evaluate' }, request);
+        return limited;
+      }
+    }
+
     const { application_id, simulation_id } = await request.json();
 
     if (!application_id || !simulation_id) {

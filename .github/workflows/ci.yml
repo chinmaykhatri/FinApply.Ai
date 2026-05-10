@@ -27,6 +27,8 @@ env:
   RESEND_API_KEY: re_placeholder
   NEXT_PUBLIC_APP_URL: https://finapply.ai
   MAKE_WEBHOOK_SECRET: placeholder-webhook-secret
+  ADMIN_EMAIL: ci-placeholder@example.com
+  ADMIN_API_SECRET: placeholder-internal-secret
 
 jobs:
   # ──────────────────────────────────────────────

@@ -1,29 +1,35 @@
-import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { NextResponse, NextRequest } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
+import { applyRateLimit, sanitizeString, isValidEmail, auditLog } from '@/lib/security';
 
-function getSupabase() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
-}
-
-export async function POST(req: Request) {
+/* POST /api/employer-waitlist — Employer signs up for waitlist */
+export async function POST(request: NextRequest) {
   try {
-    const supabase = getSupabase();
-    const { email, company } = await req.json();
-
-    if (!email || !company) {
-      return NextResponse.json({ error: 'Email and company required' }, { status: 400 });
+    // Rate limit: 3 per minute per IP (prevent spam)
+    const limited = applyRateLimit(request, 'register');
+    if (limited) {
+      auditLog('api.rate_limited', { endpoint: '/api/employer-waitlist' }, request);
+      return limited;
     }
+
+    const { email, company } = await request.json();
+
+    if (!email || !isValidEmail(email) || !company) {
+      return NextResponse.json({ error: 'Valid email and company required' }, { status: 400 });
+    }
+
+    const supabase = await createClient();
 
     const { error } = await supabase
       .from('employer_waitlist')
-      .insert({ email, company });
+      .insert({
+        email: sanitizeString(email, 254),
+        company: sanitizeString(company, 200),
+      });
 
     if (error) {
       // If table doesn't exist yet, still return success
-      console.error('Employer waitlist insert error:', error);
+      console.error('Employer waitlist insert error:', error.message);
     }
 
     return NextResponse.json({ success: true });
