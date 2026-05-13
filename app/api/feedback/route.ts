@@ -1,5 +1,5 @@
 import { NextResponse, NextRequest } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { applyRateLimit, sanitizeString, auditLog } from '@/lib/security';
 
 /* POST /api/feedback — Candidate submits feedback on their FISS report */
@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Ratings must be between 1 and 5' }, { status: 400 });
     }
 
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // Look up application by report_token to prove ownership
     const { data: app, error: appError } = await supabase

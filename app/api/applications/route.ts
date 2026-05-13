@@ -1,5 +1,5 @@
 import { NextResponse, NextRequest } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { applyRateLimit, sanitizeString, isValidEmail, auditLog } from '@/lib/security';
 
 /* POST /api/applications — Submit beta application (legacy) */
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
       essay: sanitizeString(essay, 10_000),
     };
 
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // Generate tokens
     const deal_room_token = crypto.randomUUID();

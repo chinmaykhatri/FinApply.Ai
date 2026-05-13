@@ -1,5 +1,5 @@
 import { NextResponse, NextRequest } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { applyRateLimit, auditLog } from '@/lib/security';
 
 /* GET /api/leaderboard — Public cohort leaderboard */
@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
       return limited;
     }
 
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     const { data, error } = await supabase
       .from('fiss_reports')

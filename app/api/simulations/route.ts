@@ -1,5 +1,5 @@
 import { NextResponse, NextRequest } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { applyRateLimit, sanitizeString, auditLog } from '@/lib/security';
 
 /* POST /api/simulations — Submit deal room work + auto-evaluate */
@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // ══════════════════════════════════════════════
     // OWNERSHIP CHECK — verify deal_room_token matches application_id

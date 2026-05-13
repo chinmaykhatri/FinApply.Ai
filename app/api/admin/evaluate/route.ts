@@ -1,5 +1,5 @@
 import { NextResponse, NextRequest } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { buildEvaluationPrompt } from '@/lib/evaluation/prompt';
 import { getCaseByCode, resolveRoleTrack } from '@/lib/cases';
@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing application_id or simulation_id' }, { status: 400 });
     }
 
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // 1. Fetch simulation content
     const { data: sim, error: simErr } = await supabase

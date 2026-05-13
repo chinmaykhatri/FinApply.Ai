@@ -1,5 +1,5 @@
 import { NextResponse, NextRequest } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { applyRateLimit, sanitizeString, isValidEmail, auditLog, verifyHMAC } from '@/lib/security';
 import crypto from 'crypto';
 
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
       essay: sanitizeString(essay, 10_000) || null,
     };
 
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // Generate unique tokens
     const deal_room_token = crypto.randomUUID();

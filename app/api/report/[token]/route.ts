@@ -1,5 +1,5 @@
 import { NextResponse, NextRequest } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { applyRateLimit, auditLog } from '@/lib/security';
 
 /* GET /api/report/[token] — Fetch FISS report by report token */
@@ -27,7 +27,7 @@ export async function GET(
       return NextResponse.json({ error: 'Invalid token format' }, { status: 400 });
     }
 
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // Find application by report token — exclude sensitive fields
     const { data: app, error: appError } = await supabase
