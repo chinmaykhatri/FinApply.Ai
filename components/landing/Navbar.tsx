@@ -40,13 +40,13 @@ export default function Navbar() {
   // Section links for the landing page
   const sectionLinks = [
     { label: 'How It Works', href: '#how-it-works' },
-    { label: 'FISS Score', href: '#fiss-score' },
     { label: 'For Employers', href: '#for-employers' },
   ];
 
   // Page links (shown on all pages)
   const pageLinks = [
     { label: 'Deal Room', href: '/dealroom-explained' },
+    { label: 'FISS Score', href: '/fiss-score' },
     { label: 'About', href: '/about' },
     { label: 'Founders', href: '/founders' },
   ];
