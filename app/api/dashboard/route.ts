@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
       applications.map(async (app) => {
         const { data: reports } = await supabase
           .from('fiss_reports')
-          .select('id, total_score, created_at')
+          .select('id, total_score, financial_reasoning, structured_thinking, risk_identification, decision_clarity, created_at')
           .eq('application_id', app.id)
           .order('created_at', { ascending: false })
           .limit(1);

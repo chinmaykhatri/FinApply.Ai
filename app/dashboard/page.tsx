@@ -29,7 +29,13 @@ interface AppData {
   report_token: string;
   created_at: string;
   updated_at: string;
-  report: { id: string; total_score: number; created_at: string } | null;
+  report: {
+    id: string; total_score: number; created_at: string;
+    financial_reasoning?: { score: number };
+    structured_thinking?: { score: number };
+    risk_identification?: { score: number };
+    decision_clarity?: { score: number };
+  } | null;
   simulation: { id: string; case_code: string; word_count: number; time_taken_seconds: number; submitted_at: string } | null;
 }
 
@@ -228,6 +234,132 @@ export default function DashboardPage() {
                 Switch Account
               </button>
             </div>
+
+            {/* ═══ PROGRESS CARD ═══ */}
+            {(() => {
+              const scored = applications.filter(a => a.report);
+              if (scored.length < 2) return null;
+
+              // Sort oldest first for sparkline
+              const sorted = [...scored].sort((a, b) => new Date(a.report!.created_at).getTime() - new Date(b.report!.created_at).getTime());
+              const latest = sorted[sorted.length - 1].report!;
+              const prev = sorted[sorted.length - 2].report!;
+
+              const dims = [
+                { key: 'FR', label: 'Financial Reasoning', color: '#2563EB',
+                  now: latest.financial_reasoning?.score ?? 0, was: prev.financial_reasoning?.score ?? 0 },
+                { key: 'IS', label: 'Structured Thinking', color: '#7C3AED',
+                  now: latest.structured_thinking?.score ?? 0, was: prev.structured_thinking?.score ?? 0 },
+                { key: 'SR', label: 'Risk Awareness', color: '#D97706',
+                  now: latest.risk_identification?.score ?? 0, was: prev.risk_identification?.score ?? 0 },
+                { key: 'SD', label: 'Decision Clarity', color: '#16A34A',
+                  now: latest.decision_clarity?.score ?? 0, was: prev.decision_clarity?.score ?? 0 },
+              ];
+
+              const best = dims.reduce((a, b) => (b.now - b.was) > (a.now - a.was) ? b : a);
+              const bestDelta = best.now - best.was;
+
+              // Sparkline points
+              const scores = sorted.map(a => a.report!.total_score);
+              const maxS = Math.max(...scores, 100);
+              const minS = Math.min(...scores, 0);
+              const range = maxS - minS || 1;
+              const svgW = 200;
+              const svgH = 48;
+              const pts = scores.map((s, i) => {
+                const x = scores.length === 1 ? svgW / 2 : (i / (scores.length - 1)) * svgW;
+                const y = svgH - ((s - minS) / range) * (svgH - 8) - 4;
+                return `${x},${y}`;
+              }).join(' ');
+
+              return (
+                <div style={{
+                  background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
+                  borderRadius: 16, padding: 28, marginBottom: 20,
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20 }}>
+                    <span style={{ fontSize: 16, lineHeight: 1 }}>📈</span>
+                    <span style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>Your Progress</span>
+                    <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', marginLeft: 'auto' }}>
+                      {scored.length} simulations completed
+                    </span>
+                  </div>
+
+                  {/* Sparkline + total delta */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 24, marginBottom: 24 }}>
+                    <svg width={svgW} height={svgH} style={{ flex: '0 0 200px' }}>
+                      <polyline points={pts} fill="none" stroke="#2563EB" strokeWidth="2" strokeLinejoin="round" />
+                      {scores.map((s, i) => {
+                        const x = scores.length === 1 ? svgW / 2 : (i / (scores.length - 1)) * svgW;
+                        const y = svgH - ((s - minS) / range) * (svgH - 8) - 4;
+                        return <circle key={i} cx={x} cy={y} r={3} fill={i === scores.length - 1 ? '#2563EB' : 'rgba(37,99,235,0.40)'} />;
+                      })}
+                    </svg>
+                    <div>
+                      <div style={{ fontSize: 28, fontWeight: 700, color: '#fff', lineHeight: 1 }}>
+                        {latest.total_score}
+                        <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.30)', fontWeight: 400 }}>/100</span>
+                      </div>
+                      {(() => {
+                        const d = latest.total_score - prev.total_score;
+                        if (d === 0) return <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.40)' }}>No change from previous</span>;
+                        return (
+                          <span style={{ fontSize: 13, fontWeight: 600, color: d > 0 ? '#16A34A' : '#EF4444' }}>
+                            {d > 0 ? '↑' : '↓'} {Math.abs(d)} pts from previous
+                          </span>
+                        );
+                      })()}
+                    </div>
+                  </div>
+
+                  {/* Dimension deltas */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
+                    {dims.map(d => {
+                      const delta = d.now - d.was;
+                      return (
+                        <div key={d.key} style={{
+                          display: 'flex', alignItems: 'center', gap: 10,
+                          padding: '10px 14px', borderRadius: 10,
+                          background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)',
+                        }}>
+                          <div style={{
+                            width: 4, height: 28, borderRadius: 2, background: d.color, flexShrink: 0,
+                          }} />
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.40)', marginBottom: 2 }}>{d.label}</div>
+                            <div style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>
+                              {d.was} → {d.now}
+                              {delta !== 0 && (
+                                <span style={{
+                                  fontSize: 12, fontWeight: 600, marginLeft: 6,
+                                  color: delta > 0 ? '#16A34A' : '#EF4444',
+                                }}>
+                                  ({delta > 0 ? '+' : ''}{delta})
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Best improvement callout */}
+                  {bestDelta > 0 && (
+                    <div style={{
+                      marginTop: 16, padding: '10px 16px', borderRadius: 10,
+                      background: 'rgba(22,163,74,0.08)', border: '1px solid rgba(22,163,74,0.15)',
+                      display: 'flex', alignItems: 'center', gap: 8,
+                    }}>
+                      <span style={{ fontSize: 14 }}>🏆</span>
+                      <span style={{ fontSize: 13, color: '#16A34A', fontWeight: 500 }}>
+                        Strongest growth: {best.label} (+{bestDelta})
+                      </span>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
 
             {/* Application cards */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
