@@ -30,7 +30,13 @@ CREATE TABLE IF NOT EXISTS simulations (
   word_count INTEGER DEFAULT 0,
   time_taken_seconds INTEGER DEFAULT 0,
   started_at TIMESTAMPTZ,
-  submitted_at TIMESTAMPTZ DEFAULT now()
+  submitted_at TIMESTAMPTZ DEFAULT now(),
+  tab_violations INTEGER DEFAULT 0,
+  violation_log TEXT,
+  paste_count INTEGER DEFAULT 0,
+  large_paste_count INTEGER DEFAULT 0,
+  typing_bursts INTEGER DEFAULT 0,
+  integrity_score INTEGER DEFAULT 100 CHECK (integrity_score >= 0 AND integrity_score <= 100)
 );
 
 -- FISS Reports Table

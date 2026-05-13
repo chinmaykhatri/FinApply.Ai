@@ -62,12 +62,19 @@ export default function DealRoomPage() {
   const [webcamStream, setWebcamStream] = useState<MediaStream | null>(null);
   const [webcamError, setWebcamError] = useState(false);
   const [proctorReady, setProcterReady] = useState(false);
+  // Integrity tracking
+  const [pasteCount, setPasteCount] = useState(0);
+  const [largePasteCount, setLargePasteCount] = useState(0);
+  const [typingBursts, setTypingBursts] = useState(0);
+  const lastKeystrokeTime = useRef<number>(0);
+  const keystrokeBuffer = useRef<number>(0);
+  const burstCheckTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const startedAt = useRef<string>('');
   const targetRoleRef = useRef<string>('Investment Banking Analyst');
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
   const alertPlayedRef = useRef(false);
   const webcamRef = useRef<HTMLVideoElement>(null);
-  const violationLog = useRef<Array<{type: string; time: string}>>([]);
+  const violationLog = useRef<Array<{type: string; time: string; detail?: string}>>([]);
   const autoSubmitRef = useRef<() => void>(() => {});
 
   // Validate token on mount
@@ -349,6 +356,7 @@ export default function DealRoomPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             application_id: applicationId,
+            deal_room_token: token,
             case_code: activeCase?.code || 'UNKNOWN',
             content,
             word_count: wordCount,
@@ -356,6 +364,9 @@ export default function DealRoomPage() {
             started_at: startedAt.current,
             tab_violations: tabViolations,
             violation_log: violationLog.current,
+            paste_count: pasteCount,
+            large_paste_count: largePasteCount,
+            typing_bursts: typingBursts,
           }),
         });
         if (res.ok) success = true;
@@ -387,7 +398,7 @@ export default function DealRoomPage() {
     }
     setPhase('submitted');
     setSubmitting(false);
-  }, [content, wordCount, timeLeft, applicationId, token, activeCase, tabViolations, webcamStream]);
+  }, [content, wordCount, timeLeft, applicationId, token, activeCase, tabViolations, webcamStream, pasteCount, largePasteCount, typingBursts]);
 
   // Keep autoSubmitRef in sync for proctoring hooks
   autoSubmitRef.current = handleAutoSubmit;
@@ -714,6 +725,13 @@ export default function DealRoomPage() {
                 ⚠ {tabViolations}/{MAX_TAB_VIOLATIONS} violations
               </span>
             )}
+            <span style={{
+              fontSize: 10, fontWeight: 500, padding: '2px 8px', borderRadius: 100,
+              background: 'rgba(139,92,246,0.10)', border: '1px solid rgba(139,92,246,0.20)',
+              color: '#8B5CF6',
+            }}>
+              🛡 Integrity Monitored
+            </span>
           </div>
         </div>
 
@@ -951,7 +969,27 @@ export default function DealRoomPage() {
           <textarea
             ref={textAreaRef}
             value={content}
-            onChange={(e) => setContent(e.target.value)}
+            onChange={(e) => {
+              // Typing cadence detection: detect burst input (>60 chars in <500ms)
+              const now = Date.now();
+              const charDelta = Math.abs(e.target.value.length - content.length);
+              if (charDelta > 60 && now - lastKeystrokeTime.current < 500) {
+                setTypingBursts(prev => prev + 1);
+                violationLog.current.push({ type: 'typing_burst', time: new Date().toISOString(), detail: `${charDelta} chars in ${now - lastKeystrokeTime.current}ms` });
+              }
+              lastKeystrokeTime.current = now;
+              setContent(e.target.value);
+            }}
+            onPaste={(e) => {
+              const pastedText = e.clipboardData.getData('text');
+              setPasteCount(prev => prev + 1);
+              if (pastedText.length >= 50) {
+                setLargePasteCount(prev => prev + 1);
+                violationLog.current.push({ type: 'large_paste', time: new Date().toISOString(), detail: `${pastedText.length} chars` });
+              } else {
+                violationLog.current.push({ type: 'paste', time: new Date().toISOString(), detail: `${pastedText.length} chars` });
+              }
+            }}
             placeholder="Begin your investment analysis here...
 
 Structure your response with clear sections:

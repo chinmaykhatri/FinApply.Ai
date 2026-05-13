@@ -40,6 +40,11 @@ interface CandidateData {
     time_taken_seconds: number;
     content: string;
     case_code: string;
+    tab_violations?: number;
+    paste_count?: number;
+    large_paste_count?: number;
+    typing_bursts?: number;
+    integrity_score?: number;
   }>;
   fiss_reports?: FissReportData[];
 }
@@ -543,7 +548,7 @@ export default function AdminDashboard() {
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: '2fr 2fr 1.5fr 1fr 1fr 2fr',
+              gridTemplateColumns: '2fr 2fr 1.5fr 1fr 0.7fr 0.8fr 2fr',
               padding: '14px 24px',
               borderBottom: '1px solid rgba(255,255,255,0.08)',
               background: 'rgba(255,255,255,0.03)',
@@ -556,6 +561,7 @@ export default function AdminDashboard() {
             <span>Institution</span>
             <span>Status</span>
             <span>Score</span>
+            <span>Integrity</span>
             <span>Actions</span>
           </div>
 
@@ -576,7 +582,7 @@ export default function AdminDashboard() {
                 key={c.id}
                 style={{
                   display: 'grid',
-                  gridTemplateColumns: '2fr 2fr 1.5fr 1fr 1fr 2fr',
+                  gridTemplateColumns: '2fr 2fr 1.5fr 1fr 0.7fr 0.8fr 2fr',
                   padding: '14px 24px',
                   borderBottom: '1px solid rgba(255,255,255,0.04)',
                   alignItems: 'center', fontSize: 13, transition: 'background 200ms',
@@ -598,6 +604,30 @@ export default function AdminDashboard() {
                 <span><StatusBadge status={c.status} /></span>
                 <span style={{ color: '#fff', fontWeight: 500 }}>
                   {c.fiss_reports?.[0]?.total_score || '—'}
+                </span>
+
+                {/* Integrity Score */}
+                <span>
+                  {(() => {
+                    const sim = c.simulations?.[0];
+                    if (!sim || sim.integrity_score === undefined) return <span style={{ color: 'rgba(255,255,255,0.20)' }}>—</span>;
+                    const s = sim.integrity_score;
+                    const color = s >= 80 ? '#16A34A' : s >= 50 ? '#D97706' : '#DC2626';
+                    const bg = s >= 80 ? 'rgba(22,163,74,0.10)' : s >= 50 ? 'rgba(217,119,6,0.10)' : 'rgba(220,38,38,0.10)';
+                    const border = s >= 80 ? 'rgba(22,163,74,0.20)' : s >= 50 ? 'rgba(217,119,6,0.20)' : 'rgba(220,38,38,0.20)';
+                    const label = s >= 80 ? '✓ Clean' : s >= 50 ? '⚠ Flagged' : '🚨 Suspicious';
+                    return (
+                      <span
+                        title={`Score: ${s}/100 | Tabs: ${sim.tab_violations||0} | Pastes: ${sim.paste_count||0} (${sim.large_paste_count||0} large) | Bursts: ${sim.typing_bursts||0}`}
+                        style={{
+                          fontSize: 10, fontWeight: 600, padding: '3px 8px', borderRadius: 100,
+                          background: bg, border: `1px solid ${border}`, color, cursor: 'help',
+                        }}
+                      >
+                        {label}
+                      </span>
+                    );
+                  })()}
                 </span>
 
                 {/* Actions */}

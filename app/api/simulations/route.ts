@@ -16,6 +16,7 @@ export async function POST(request: NextRequest) {
     const {
       application_id, deal_room_token, case_code, content, word_count,
       time_taken_seconds, started_at, tab_violations, violation_log,
+      paste_count, large_paste_count, typing_bursts,
     } = body;
 
     if (!application_id || !content || !deal_room_token) {
@@ -55,6 +56,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Submission content is too short' }, { status: 400 });
     }
 
+    // Compute integrity score (100 = clean, lower = more suspicious)
+    const tabPenalty = Math.min(Number(tab_violations) || 0, 10) * 10;
+    const pastePenalty = Math.min(Number(large_paste_count) || 0, 10) * 12;
+    const burstPenalty = Math.min(Number(typing_bursts) || 0, 10) * 8;
+    const integrityScore = Math.max(0, 100 - tabPenalty - pastePenalty - burstPenalty);
+
     // 1. Insert simulation
     const { data: sim, error: simError } = await supabase
       .from('simulations')
@@ -68,6 +75,10 @@ export async function POST(request: NextRequest) {
         submitted_at: new Date().toISOString(),
         tab_violations: Math.min(Math.max(0, Number(tab_violations) || 0), 10_000),
         violation_log: violation_log ? sanitizeString(JSON.stringify(violation_log), 10_000) : null,
+        paste_count: Math.min(Math.max(0, Number(paste_count) || 0), 10_000),
+        large_paste_count: Math.min(Math.max(0, Number(large_paste_count) || 0), 10_000),
+        typing_bursts: Math.min(Math.max(0, Number(typing_bursts) || 0), 10_000),
+        integrity_score: integrityScore,
       })
       .select()
       .single();
