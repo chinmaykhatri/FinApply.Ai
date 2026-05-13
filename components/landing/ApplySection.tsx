@@ -22,15 +22,22 @@ export default function ApplySection() {
   const [revealed, setRevealed] = useState(false);
   const btnRef = useRef<HTMLDivElement>(null);
 
+  const [formError, setFormError] = useState('');
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    setFormError('');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const required = ['full_name', 'email', 'college_or_firm', 'city', 'current_status', 'target_role'];
-    if (required.some((k) => !formData[k as keyof typeof formData].trim())) return;
+    if (required.some((k) => !formData[k as keyof typeof formData].trim())) {
+      setFormError('Please fill in all required fields.');
+      return;
+    }
     setLoading(true);
+    setFormError('');
 
     try {
       const res = await fetch('/api/register', {
@@ -57,15 +64,12 @@ export default function ApplySection() {
 
         // Go straight to dashboard — full access, no approval needed
         router.push('/dashboard');
+      } else {
+        setFormError(result.error || 'Registration failed. Please try again.');
+        setLoading(false);
       }
     } catch {
-      // Even on network error, try to send them to dashboard
-      localStorage.setItem('finapply_registered', 'true');
-      localStorage.setItem('finapply_email', formData.email);
-      localStorage.setItem('finapply_dashboard_email', formData.email);
-      setSubmitted(true);
-      router.push('/dashboard');
-    } finally {
+      setFormError('Network error. Please check your connection and try again.');
       setLoading(false);
     }
   };
@@ -267,6 +271,17 @@ export default function ApplySection() {
                 Get Started — Free
               </PillButton>
             </div>
+
+            {formError && (
+              <p style={{
+                fontSize: 13, color: '#DC2626', marginTop: 8,
+                padding: '10px 16px', borderRadius: 10,
+                background: 'rgba(220,38,38,0.08)',
+                border: '1px solid rgba(220,38,38,0.20)',
+              }}>
+                {formError}
+              </p>
+            )}
 
             <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.30)', marginTop: 4 }}>
               By registering, you agree to receive your FISS Report via email.

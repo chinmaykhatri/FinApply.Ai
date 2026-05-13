@@ -1,5 +1,5 @@
 import { NextResponse, NextRequest } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { applyRateLimit, sanitizeString, isValidEmail, isValidURL, auditLog } from '@/lib/security';
 
 /* POST /api/register — Public registration (no beta gate) */
@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
       linkedin_url: linkedin_url ? sanitizeString(linkedin_url, 500) : null,
     };
 
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // Generate tokens
     const deal_room_token = crypto.randomUUID();

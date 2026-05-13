@@ -1,5 +1,5 @@
 import { NextResponse, NextRequest } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { applyRateLimit, sanitizeString, isValidEmail, auditLog } from '@/lib/security';
 
 /* POST /api/dashboard — Lookup user applications by email */
@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
     }
 
     const normalizedEmail = sanitizeString(email, 254).toLowerCase();
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // Fetch applications — EXCLUDE sensitive tokens from response
     const { data: applications, error } = await supabase

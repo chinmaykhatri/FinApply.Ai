@@ -36,6 +36,7 @@ interface AppData {
 export default function DashboardPage() {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
+  const [autoLoading, setAutoLoading] = useState(true);
   const [applications, setApplications] = useState<AppData[] | null>(null);
   const [error, setError] = useState('');
   const [remembered, setRemembered] = useState(false);
@@ -46,13 +47,15 @@ export default function DashboardPage() {
     if (saved) {
       setEmail(saved);
       setRemembered(true);
+    } else {
+      setAutoLoading(false);
     }
   }, []);
 
   // Auto-lookup if we have a remembered email
   useEffect(() => {
     if (remembered && email) {
-      handleLookup();
+      handleLookup().finally(() => setAutoLoading(false));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [remembered]);
@@ -137,7 +140,12 @@ export default function DashboardPage() {
         </div>
 
         {/* Email lookup or logged-in state */}
-        {!applications ? (
+        {autoLoading ? (
+          <div style={{ textAlign: 'center', padding: '80px 0' }}>
+            <div className="spinner" style={{ width: 32, height: 32, borderWidth: 3, margin: '0 auto 16px' }} />
+            <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.40)' }}>Loading your profile...</p>
+          </div>
+        ) : !applications ? (
           <div style={{
             background: 'rgba(255,255,255,0.03)',
             border: '1px solid rgba(255,255,255,0.08)',
