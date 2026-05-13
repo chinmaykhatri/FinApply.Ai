@@ -39,7 +39,7 @@ export default function DealRoomPage() {
   const router = useRouter();
   const token = params.token as string;
 
-  const [phase, setPhase] = useState<'loading' | 'invalid' | 'instructions' | 'warmup' | 'active' | 'submitted'>('loading');
+  const [phase, setPhase] = useState<'loading' | 'invalid' | 'briefing' | 'instructions' | 'warmup' | 'active' | 'submitted'>('loading');
   const [applicationId, setApplicationId] = useState<string>('');
   const [candidateName, setCandidateName] = useState<string>('');
   const [activeCase, setActiveCase] = useState<DealCase | null>(null);
@@ -90,7 +90,7 @@ export default function DealRoomPage() {
           if (json.data.simulations && json.data.simulations.length > 0) {
             setPhase('submitted');
           } else {
-            setPhase('instructions');
+            setPhase('briefing');
           }
         } else {
           setPhase('invalid');
@@ -426,6 +426,92 @@ export default function DealRoomPage() {
           <div style={{ marginTop: 32 }}>
             <PillButton variant="secondary" href="/">
               Return to FinApply.ai
+            </PillButton>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Briefing screen — explains what the Deal Room is before starting
+  if (phase === 'briefing') {
+    return (
+      <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, position: 'relative', overflow: 'hidden' }}>
+        {/* Background glow */}
+        <div style={{
+          position: 'absolute', top: '30%', left: '50%', transform: 'translate(-50%, -50%)',
+          width: 500, height: 500, borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(37,99,235,0.08) 0%, transparent 70%)',
+          pointerEvents: 'none',
+        }} />
+
+        <div style={{ maxWidth: 560, width: '100%', position: 'relative', zIndex: 10 }}>
+          {/* Logo */}
+          <a href="/" style={{ textDecoration: 'none' }}>
+            <p style={{ fontSize: 11, fontWeight: 500, color: 'rgba(255,255,255,0.40)', letterSpacing: 3, marginBottom: 32 }}>
+              FINAPPLY.AI
+            </p>
+          </a>
+
+          {/* Icon */}
+          <div style={{
+            width: 64, height: 64, borderRadius: 16,
+            background: 'linear-gradient(135deg, rgba(37,99,235,0.12), rgba(139,92,246,0.12))',
+            border: '1px solid rgba(37,99,235,0.20)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 28, marginBottom: 28,
+          }}>
+            🏦
+          </div>
+
+          {/* Heading */}
+          <h1 style={{ fontSize: 32, fontWeight: 700, color: '#fff', lineHeight: 1.3, margin: '0 0 16px' }}>
+            The Deal Room
+          </h1>
+          <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.55)', lineHeight: 1.7, margin: '0 0 36px', maxWidth: 480 }}>
+            This is where you prove how you think. You&apos;ll receive a real-world investment case —
+            analyze the company, build your thesis, and write your recommendation.
+            No textbook answers. No multiple choice. Just your raw analytical ability.
+          </p>
+
+          {/* What to expect cards */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 40 }}>
+            {[
+              { icon: '⏱', title: '90 Minutes', desc: 'Timed simulation — the clock starts when you begin' },
+              { icon: '🎯', title: 'AI-Evaluated', desc: 'Your response is scored across 4 dimensions into a FISS Report' },
+              { icon: '📝', title: 'One Attempt', desc: 'Write 800–1500 words of structured investment analysis' },
+            ].map((item, i) => (
+              <div key={i} style={{
+                display: 'flex', gap: 16, alignItems: 'flex-start',
+                padding: '16px 20px', borderRadius: 14,
+                background: 'rgba(255,255,255,0.03)',
+                border: '1px solid rgba(255,255,255,0.06)',
+                transition: 'border-color 200ms ease',
+              }}>
+                <span style={{
+                  fontSize: 20, flexShrink: 0, width: 40, height: 40, borderRadius: 10,
+                  background: 'rgba(37,99,235,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  {item.icon}
+                </span>
+                <div>
+                  <p style={{ fontSize: 14, fontWeight: 600, color: '#fff', margin: '0 0 3px' }}>{item.title}</p>
+                  <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', margin: 0, lineHeight: 1.4 }}>{item.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Divider */}
+          <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', marginBottom: 32 }} />
+
+          {/* Buttons */}
+          <div style={{ display: 'flex', gap: 12 }}>
+            <PillButton variant="outline" large onClick={() => router.push('/dashboard')}>
+              ← Not Now
+            </PillButton>
+            <PillButton variant="primary" large onClick={() => setPhase('instructions')}>
+              Enter Deal Room →
             </PillButton>
           </div>
         </div>

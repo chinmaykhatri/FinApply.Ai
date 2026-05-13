@@ -33,6 +33,13 @@ function ConfirmationContent() {
   const [showContent, setShowContent] = useState(false);
   const confettiRef = useRef<HTMLCanvasElement>(null);
 
+  // Save email for dashboard auto-lookup on return visits
+  useEffect(() => {
+    if (email) {
+      localStorage.setItem('finapply_dashboard_email', email);
+    }
+  }, [email]);
+
   useEffect(() => {
     const t1 = setTimeout(() => setShowCheck(true), 300);
     const t2 = setTimeout(() => setShowContent(true), 800);
@@ -342,6 +349,9 @@ function ConfirmationContent() {
         }}>
           <PillButton variant="primary" href={dealToken ? `/dealroom/${dealToken}` : '/'}>
             Enter Deal Room →
+          </PillButton>
+          <PillButton variant="outline" href="/dashboard">
+            Go to Dashboard
           </PillButton>
           <PillButton
             variant="outline"

@@ -42,10 +42,11 @@ export default function ApplySection() {
       const result = await res.json();
 
       if (res.ok && result.success) {
-        // Store tokens in localStorage for immediate access
+        // Store user data for dashboard auto-load
         localStorage.setItem('finapply_registered', 'true');
         localStorage.setItem('finapply_name', formData.full_name);
         localStorage.setItem('finapply_email', formData.email);
+        localStorage.setItem('finapply_dashboard_email', formData.email);
         if (result.data?.deal_room_token) {
           localStorage.setItem('finapply_deal_token', result.data.deal_room_token);
         }
@@ -54,24 +55,16 @@ export default function ApplySection() {
         }
         setSubmitted(true);
 
-        // Redirect to confirmation page with deal room access
-        const params = new URLSearchParams({
-          name: formData.full_name,
-          role: formData.target_role,
-          email: formData.email,
-          deal_token: result.data?.deal_room_token || '',
-          report_token: result.data?.report_token || '',
-        });
-        router.push(`/confirmation?${params.toString()}`);
+        // Go straight to dashboard — full access, no approval needed
+        router.push('/dashboard');
       }
     } catch {
+      // Even on network error, try to send them to dashboard
+      localStorage.setItem('finapply_registered', 'true');
+      localStorage.setItem('finapply_email', formData.email);
+      localStorage.setItem('finapply_dashboard_email', formData.email);
       setSubmitted(true);
-      const params = new URLSearchParams({
-        name: formData.full_name,
-        role: formData.target_role,
-        email: formData.email,
-      });
-      router.push(`/confirmation?${params.toString()}`);
+      router.push('/dashboard');
     } finally {
       setLoading(false);
     }

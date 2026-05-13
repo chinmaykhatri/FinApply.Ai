@@ -30,6 +30,8 @@ export async function POST(request: NextRequest) {
         email,
         target_role,
         status,
+        deal_room_token,
+        report_token,
         created_at,
         updated_at
       `)
@@ -65,7 +67,6 @@ export async function POST(request: NextRequest) {
 
         return {
           ...app,
-          // SECURITY: deal_room_token and report_token are deliberately EXCLUDED
           report: reports?.[0] || null,
           simulation: sims?.[0] || null,
         };

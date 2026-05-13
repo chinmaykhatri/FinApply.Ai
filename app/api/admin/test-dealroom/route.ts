@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { ADMIN_EMAIL } from '@/lib/constants';
 
 /* GET /api/admin/test-dealroom?role=IB
@@ -7,7 +7,7 @@ import { ADMIN_EMAIL } from '@/lib/constants';
    so the admin can test any Deal Room simulation */
 export async function GET(request: Request) {
   try {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // Verify the caller is the admin
     const { data: { user } } = await supabase.auth.getUser();

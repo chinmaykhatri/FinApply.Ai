@@ -1,17 +1,30 @@
 'use client';
 import React, { useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import PillButton from '@/components/ui/PillButton';
 import anime from 'animejs';
 
 const VIDEO_URL = 'https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260217_030345_246c0224-10a4-422c-b324-070b7c0eceda.mp4';
 
 export default function Hero() {
+  const router = useRouter();
   const sectionRef = useRef<HTMLElement>(null);
   const statsRef = useRef<HTMLDivElement>(null);
   const [statsVisible, setStatsVisible] = useState(false);
+  const [isRegistered, setIsRegistered] = useState(false);
 
-  const scrollToApply = () => {
-    document.getElementById('apply')?.scrollIntoView({ behavior: 'smooth' });
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setIsRegistered(localStorage.getItem('finapply_registered') === 'true');
+    }
+  }, []);
+
+  const handleCTA = () => {
+    if (isRegistered) {
+      router.push('/dashboard');
+    } else {
+      document.getElementById('apply')?.scrollIntoView({ behavior: 'smooth' });
+    }
   };
 
   // Cinematic entrance timeline
@@ -232,8 +245,8 @@ export default function Hero() {
 
         {/* CTA */}
         <div className="hero-cta" style={{ opacity: 0 }}>
-          <PillButton variant="primary" onClick={scrollToApply}>
-            Get Started Free
+          <PillButton variant="primary" onClick={handleCTA}>
+            {isRegistered ? 'Go to Dashboard' : 'Get Started Free'}
           </PillButton>
         </div>
 
