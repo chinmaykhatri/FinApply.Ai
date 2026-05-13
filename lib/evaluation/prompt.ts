@@ -86,7 +86,7 @@ CRITICAL GAP (1-9): No clear recommendation. Or contradictory positions within t
 
 <integrity_detection>
 Flag as ai_generated: true if THREE OR MORE of the following are present:
-1. Response structure is unusually perfect relative to the 90-minute time constraint
+1. Response structure is unusually perfect relative to the 45-minute time constraint
 2. Financial calculations are more precise than the case data supports
 3. Language patterns suggest formulated answers rather than working-through-the-problem reasoning (phrases like "it is worth noting that", "furthermore", "in conclusion", "to summarize")
 4. The response addresses all task components with equal depth — real analysts under time pressure always show uneven depth
@@ -130,7 +130,7 @@ Return exactly this JSON structure. No other text. Valid JSON only.
   "ai_generated_flag": [true|false],
   "ai_flag_reason": "[If true: specific markers present. If false: null]",
   "word_count_assessment": "[adequate|thin|strong]",
-  "time_efficiency_note": "[Brief note on response depth relative to 90 minutes available]"
+  "time_efficiency_note": "[Brief note on response depth relative to 45 minutes available]"
 }
 </output_format>`;
 }

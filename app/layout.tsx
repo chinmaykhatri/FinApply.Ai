@@ -4,12 +4,12 @@ import './globals.css';
 export const metadata: Metadata = {
   title: 'FinApply.ai — Prove How You Think',
   description:
-    'FinApply gives finance candidates a verified capability score based on real deal simulations — not resumes. One 90-minute simulation. One honest signal.',
+    'FinApply gives finance candidates a verified capability score based on real deal simulations — not resumes. One 45-minute simulation. One honest signal.',
   keywords: ['finance', 'assessment', 'FISS Score', 'investment banking', 'deal simulation', 'capability'],
   openGraph: {
     title: 'FinApply.ai — Prove How You Think',
     description:
-      'A verified capability score based on real deal simulations. One 90-minute simulation. One honest signal.',
+      'A verified capability score based on real deal simulations. One 45-minute simulation. One honest signal.',
     siteName: 'FinApply.ai',
     type: 'website',
   },

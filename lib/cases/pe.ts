@@ -6,7 +6,7 @@ export const PE_CASES: DealCase[] = [
     role: 'Private Equity Analyst',
     difficulty: 'Intermediate',
     title: 'Control Buyout — Food Services',
-    situation: 'Your fund (₹2,000 Cr mid-market PE) is evaluating a control buyout of a quick service restaurant chain. You have 90 minutes to build the investment thesis.',
+    situation: 'Your fund (₹2,000 Cr mid-market PE) is evaluating a control buyout of a quick service restaurant chain. You have 45 minutes to build the investment thesis.',
     company_overview: 'Spice Route QSR Pvt Ltd is a South Indian QSR chain. Founded 2014. 78 outlets across Karnataka, Tamil Nadu, Kerala. Mix: 31 owned, 47 franchised.',
     financials: {
       headers: ['', 'FY22', 'FY23', 'FY24'],

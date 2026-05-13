@@ -58,11 +58,11 @@ function welcomeHTML(data: { full_name: string; deal_room_url: string }) {
 
   <div style="margin:16px 0;padding:16px 20px;background:rgba(255,255,255,0.03);border-left:3px solid rgba(255,255,255,0.15);border-radius:0 8px 8px 0">
     <p style="${MUTED};margin:0 0 12px"><span style="${STRONG}">The timer starts the moment you click Begin</span> — not when you open the link. Take a minute to read the instructions first.</p>
-    <p style="${MUTED};margin:0 0 12px"><span style="${STRONG}">You have 90 minutes once you start.</span> The case is a real company scenario — financials, market context, and a specific task. No multiple choice. No trick questions. Just how you think.</p>
+    <p style="${MUTED};margin:0 0 12px"><span style="${STRONG}">You have 45 minutes once you start.</span> The case is a real company scenario — financials, market context, and a specific task. No multiple choice. No trick questions. Just how you think.</p>
     <p style="${MUTED};margin:0"><span style="${STRONG}">Your FISS Score Report arrives within 48 hours</span> of submission. It will show your score across four dimensions with specific strengths, gaps, and what to work on — not a generic scorecard.</p>
   </div>
 
-  <p style="${MUTED}">This link is yours. It does not expire but the 90-minute timer only runs once you begin.</p>
+  <p style="${MUTED}">This link is yours. It does not expire but the 45-minute timer only runs once you begin.</p>
 
   <p style="${MUTED}">One thing I want to say directly: most candidates are nervous before starting. That is normal. The simulation is designed to be genuinely challenging — not impossible, but not easy either. What we are measuring is not whether you know every answer. We are measuring <span style="${STRONG}">how you think when the answer is not obvious.</span></p>
 

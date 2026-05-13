@@ -217,7 +217,7 @@ function ConfirmationContent() {
             <div style={{ fontSize: 28, marginBottom: 12 }}>🏦</div>
             <p style={{ fontSize: 16, fontWeight: 600, color: '#fff', margin: '0 0 6px' }}>Deal Room</p>
             <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', margin: 0, lineHeight: 1.4 }}>
-              Start your 90-minute investment simulation
+              Start your 45-minute investment simulation
             </p>
             <div style={{
               marginTop: 16, fontSize: 13, fontWeight: 500, color: '#2563EB',

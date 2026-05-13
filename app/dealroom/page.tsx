@@ -43,7 +43,7 @@ export default function DealRoomLanding() {
 
         <h1 style={{ fontSize: 28, fontWeight: 600, color: '#fff' }}>Deal Room Simulation</h1>
         <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.50)', marginTop: 16, lineHeight: 1.6 }}>
-          The Deal Room is a 90-minute immersive simulation where you analyze a real investment case.
+          The Deal Room is a 45-minute immersive simulation where you analyze a real investment case.
           Register to get your personalized access link.
         </p>
 

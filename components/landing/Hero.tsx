@@ -239,7 +239,7 @@ export default function Hero() {
           }}
         >
           FinApply gives finance candidates a verified capability score based on real deal
-          simulations — not resumes. One 90-minute simulation. One honest signal. Employers
+          simulations — not resumes. One 45-minute simulation. One honest signal. Employers
           actually trust it.
         </p>
 

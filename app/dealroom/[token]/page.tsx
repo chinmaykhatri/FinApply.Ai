@@ -6,7 +6,7 @@ import Modal from '@/components/ui/Modal';
 import { assignCase } from '@/lib/cases';
 import type { DealCase } from '@/lib/cases';
 
-const TOTAL_TIME = 90 * 60; // 90 minutes in seconds
+const TOTAL_TIME = 45 * 60; // 45 minutes in seconds
 const AUTOSAVE_INTERVAL = 30000; // 30 seconds
 const PRACTICE_TIME = 10 * 60; // 10 minutes
 const MAX_TAB_VIOLATIONS = 3; // Auto-submit after 3 tab switches
@@ -477,7 +477,7 @@ export default function DealRoomPage() {
           {/* What to expect cards */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 40 }}>
             {[
-              { icon: '⏱', title: '90 Minutes', desc: 'Timed simulation — the clock starts when you begin' },
+              { icon: '⏱', title: '45 Minutes', desc: 'Timed simulation — the clock starts when you begin' },
               { icon: '🎯', title: 'AI-Evaluated', desc: 'Your response is scored across 4 dimensions into a FISS Report' },
               { icon: '📝', title: 'One Attempt', desc: 'Write 800–1500 words of structured investment analysis' },
             ].map((item, i) => (
@@ -531,14 +531,14 @@ export default function DealRoomPage() {
             Welcome{candidateName ? `, ${candidateName.split(' ')[0]}` : ''}.
           </h1>
           <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.60)', lineHeight: 1.6, marginTop: 16 }}>
-            You have <strong style={{ color: '#fff' }}>90 minutes</strong> to analyze a real company case and write your investment recommendation.
+            You have <strong style={{ color: '#fff' }}>45 minutes</strong> to analyze a real company case and write your investment recommendation.
           </p>
 
           <div style={{ marginTop: 32, display: 'flex', flexDirection: 'column', gap: 16 }}>
             {[
               { icon: '📄', text: 'Read the case packet carefully — company overview, financials, and key risks' },
               { icon: '✍️', text: 'Write a structured investment analysis (800-1500 words recommended)' },
-              { icon: '⏱️', text: 'Timer starts when you click Begin — it auto-submits at 90 minutes' },
+              { icon: '⏱️', text: 'Timer starts when you click Begin — it auto-submits at 45 minutes' },
               { icon: '🔒', text: 'Your work is auto-saved every 30 seconds — no risk of losing progress' },
             ].map((item, i) => (
               <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>

@@ -396,7 +396,7 @@ export default function ReportPage() {
             Ready to discover your FISS Score?
           </p>
           <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.50)', marginBottom: 24, lineHeight: 1.6 }}>
-            Register for free and complete a 90-minute Deal Room simulation to receive your personalized report.
+            Register for free and complete a 45-minute Deal Room simulation to receive your personalized report.
           </p>
           <PillButton variant="primary" href="/#apply">
             Get Started — Free

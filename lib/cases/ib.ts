@@ -6,7 +6,7 @@ export const IB_CASES: DealCase[] = [
     role: 'Investment Banking Analyst',
     difficulty: 'Intermediate',
     title: 'Manufacturing Acquisition',
-    situation: 'Your managing director has asked you to evaluate Meridian Auto Components Pvt Ltd for a potential acquisition by a mid-market private equity fund targeting ₹50-500 Cr revenue manufacturing companies. You have 90 minutes to complete your analysis and present a recommendation.',
+    situation: 'Your managing director has asked you to evaluate Meridian Auto Components Pvt Ltd for a potential acquisition by a mid-market private equity fund targeting ₹50-500 Cr revenue manufacturing companies. You have 45 minutes to complete your analysis and present a recommendation.',
     company_overview: 'Meridian Auto Components is a Pune-based manufacturer of precision-engineered components for passenger vehicles and commercial trucks. Founded 2008. Supplies 3 major OEMs — 78% of total revenue. 340 employees. 2 manufacturing facilities.',
     financials: {
       headers: ['', 'FY22', 'FY23', 'FY24'],
@@ -41,7 +41,7 @@ export const IB_CASES: DealCase[] = [
     role: 'Investment Banking Analyst',
     difficulty: 'Intermediate',
     title: 'Consumer Brand Acquisition',
-    situation: 'Your MD at a mid-market IB boutique has asked you to evaluate a potential acquisition of a D2C skincare brand by a large FMCG strategic buyer. You have 90 minutes to complete your analysis.',
+    situation: 'Your MD at a mid-market IB boutique has asked you to evaluate a potential acquisition of a D2C skincare brand by a large FMCG strategic buyer. You have 45 minutes to complete your analysis.',
     company_overview: 'Lumière Skin Co. is an India-based D2C skincare brand founded in 2019. Sells through own website and quick-commerce platforms. Products: 14 SKUs across serums, moisturisers, and SPF. Average order value ₹1,400. Repeat purchase rate 38%. Customer acquisition cost ₹680. Total equity raised: ₹42 Cr across 3 rounds. Last round valuation: ₹280 Cr (Series B, 2023). Strategic buyer is Hindustan Beauté Ltd — ₹4,200 Cr revenue FMCG company seeking premium skincare entry.',
     financials: {
       headers: ['', 'FY22', 'FY23', 'FY24'],
@@ -70,7 +70,7 @@ export const IB_CASES: DealCase[] = [
     role: 'Investment Banking Analyst',
     difficulty: 'Advanced',
     title: 'Tech Company IPO Readiness',
-    situation: 'Your VP has asked you to assess whether a SaaS company is ready for an IPO within 18 months and at what valuation range. You have 90 minutes to deliver your assessment.',
+    situation: 'Your VP has asked you to assess whether a SaaS company is ready for an IPO within 18 months and at what valuation range. You have 45 minutes to deliver your assessment.',
     company_overview: 'TaskFlow Technologies Pvt Ltd is a B2B SaaS project management platform based in Bengaluru. Founded 2018. Targets mid-market Indian enterprises. 340 employees. 280 paying enterprise accounts.',
     financials: {
       headers: ['', 'FY23', 'FY24'],
@@ -99,7 +99,7 @@ export const IB_CASES: DealCase[] = [
     role: 'Investment Banking Analyst',
     difficulty: 'Advanced',
     title: 'Distressed Debt Restructuring',
-    situation: 'Your MD is advising the lender consortium of a hotel chain that has defaulted on ₹380 Cr of term debt. You must evaluate restructuring options within 90 minutes.',
+    situation: 'Your MD is advising the lender consortium of a hotel chain that has defaulted on ₹380 Cr of term debt. You must evaluate restructuring options within 45 minutes.',
     company_overview: 'Suryavanshi Hospitality Ltd is an 18-hotel chain across Tier 1 and Tier 2 Indian cities. Founded 1998. Mix of 7 owned and 11 leased properties.',
     financials: {
       headers: ['', 'FY22', 'FY23', 'FY24'],

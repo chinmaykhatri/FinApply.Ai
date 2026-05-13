@@ -10,7 +10,7 @@ const STEPS = [
     step: 'Step 01',
     title: 'Complete the Deal Room',
     description:
-      'Receive a real company case packet. Analyze the financials, build a valuation, identify risks, and write your investment recommendation. 90 minutes. No multiple choice. No shortcuts.',
+      'Receive a real company case packet. Analyze the financials, build a valuation, identify risks, and write your investment recommendation. 45 minutes. No multiple choice. No shortcuts.',
   },
   {
     step: 'Step 02',
