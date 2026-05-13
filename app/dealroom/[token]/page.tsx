@@ -1044,6 +1044,34 @@ Structure your response with clear sections:
               )}
             </span>
           </div>
+
+          {/* Bottom submit bar */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              marginTop: 16,
+              padding: '16px 20px',
+              background: 'rgba(37,99,235,0.04)',
+              border: '1px solid rgba(37,99,235,0.12)',
+              borderRadius: 12,
+            }}
+          >
+            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.50)' }}>
+              <span style={{ color: '#fff', fontWeight: 500 }}>{formatTime(timeLeft)}</span> remaining
+              {' · '}
+              <span style={{ color: '#fff', fontWeight: 500 }}>{wordCount}</span> words written
+            </div>
+            <PillButton
+              variant="primary"
+              onClick={() => setShowSubmitModal(true)}
+              disabled={wordCount < 10 || submitting}
+              loading={submitting}
+            >
+              ✓ Submit Analysis
+            </PillButton>
+          </div>
         </div>
       </div>
 
