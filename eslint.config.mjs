@@ -21,6 +21,7 @@ const eslintConfig = [
       "react-hooks/exhaustive-deps": "warn",
     },
   },
+  
 ];
 
 export default eslintConfig;

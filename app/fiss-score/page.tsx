@@ -17,12 +17,12 @@ const LBL: React.CSSProperties = { fontSize: 11, fontWeight: 500, color: 'rgba(2
 const DIMS = [
   { code: 'FR', name: 'Financial Reasoning', color: '#2563EB',
     text: `Financial Reasoning measures whether you can read a set of financial statements accurately and use the numbers as decision inputs — not just report them.\n\nThe specific difference: most candidates can calculate an EBITDA multiple. Fewer can choose the right methodology for the company type, state it before their conclusion, keep their calculations internally consistent, and then use the result to actually drive a recommendation.\n\nA high FR score means your analysis is not decorative. The numbers work and they matter to what you conclude.` },
-  { code: 'IS', name: 'Intelligence in Structure', color: '#7C3AED',
-    text: `Structured Thinking measures the discipline of your analytical organisation — specifically whether you move from data to insight to conclusion in a logical sequence, or whether you reach a conclusion first and find evidence for it afterward.\n\nThe specific difference: a structured response separates what the case says (facts), what you believe it means (interpretations), and what you recommend (conclusions). Most candidates blur these together without realising it.\n\nA high IS score means a senior analyst could follow your logic and verify each step without needing to ask you what you meant.` },
-  { code: 'SR', name: 'Signal of Risk Awareness', color: '#D97706',
-    text: `Risk Identification measures whether the risks you identify are specific to this company or generic to the industry — and whether you explain why each risk matters rather than just labelling it.\n\nThe specific difference: writing 'customer concentration is a risk' is a label. Writing 'if the top customer reduces orders by 20 percent, EBITDA falls below the debt covenant threshold and the company faces a forced refinancing in a rising rate environment' is a mechanism. Only the second one is useful.\n\nA high SR score means you read the case, not the template.` },
-  { code: 'SD', name: 'Strength of Decision', color: '#16A34A',
-    text: `Decision Clarity measures whether you can commit to a clear recommendation under deliberate uncertainty — and whether you defend it with specific reasoning rather than hedging it into ambiguity.\n\nThe specific difference: 'proceed with caution given the risks identified' is not a recommendation. 'I recommend passing on this acquisition because the refinancing risk at current leverage levels outweighs the revenue growth case at any entry multiple above 9x' is a recommendation.\n\nA high SD score means you can be trusted with a decision. That is what being a junior analyst actually requires.` },
+  { code: 'ST', name: 'Structured Thinking', color: '#7C3AED',
+    text: `Structured Thinking measures the discipline of your analytical organisation — specifically whether you move from data to insight to conclusion in a logical sequence, or whether you reach a conclusion first and find evidence for it afterward.\n\nThe specific difference: a structured response separates what the case says (facts), what you believe it means (interpretations), and what you recommend (conclusions). Most candidates blur these together without realising it.\n\nA high ST score means a senior analyst could follow your logic and verify each step without needing to ask you what you meant.` },
+  { code: 'RI', name: 'Risk Identification', color: '#D97706',
+    text: `Risk Identification measures whether the risks you identify are specific to this company or generic to the industry — and whether you explain why each risk matters rather than just labelling it.\n\nThe specific difference: writing 'customer concentration is a risk' is a label. Writing 'if the top customer reduces orders by 20 percent, EBITDA falls below the debt covenant threshold and the company faces a forced refinancing in a rising rate environment' is a mechanism. Only the second one is useful.\n\nA high RI score means you read the case, not the template.` },
+  { code: 'DC', name: 'Decision Clarity', color: '#16A34A',
+    text: `Decision Clarity measures whether you can commit to a clear recommendation under deliberate uncertainty — and whether you defend it with specific reasoning rather than hedging it into ambiguity.\n\nThe specific difference: 'proceed with caution given the risks identified' is not a recommendation. 'I recommend passing on this acquisition because the refinancing risk at current leverage levels outweighs the revenue growth case at any entry multiple above 9x' is a recommendation.\n\nA high DC score means you can be trusted with a decision. That is what being a junior analyst actually requires.` },
 ];
 
 const BANDS = [
@@ -53,9 +53,9 @@ const CONF = [
 
 const SAMPLE_BARS = [
   { label: 'Financial Reasoning', score: 19, color: '#2563EB' },
-  { label: 'Intelligence in Structure', score: 21, color: '#7C3AED' },
-  { label: 'Risk Awareness', score: 16, color: '#D97706' },
-  { label: 'Decision Strength', score: 18, color: '#16A34A' },
+  { label: 'Structured Thinking', score: 21, color: '#7C3AED' },
+  { label: 'Risk Identification', score: 16, color: '#D97706' },
+  { label: 'Decision Clarity', score: 18, color: '#16A34A' },
 ];
 
 export default function FISSScorePage() {
@@ -73,7 +73,7 @@ export default function FISSScorePage() {
 
         {/* Abbreviation lines */}
         <div style={{ marginTop: 32, display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'center' }}>
-          {[['F', 'Financial Reasoning'], ['I', 'Intelligence in Structure'], ['S', 'Signal of Risk Awareness'], ['S', 'Strength of Decision']].map(([letter, word], i) => (
+          {[['F', 'Financial Reasoning'], ['I', 'Structured Thinking'], ['S', 'Risk Identification'], ['S', 'Decision Clarity']].map(([letter, word], i) => (
             <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
               <span className="fiss-letter" style={{ fontSize: 48, fontWeight: 600, color: '#2563EB', fontFamily: 'monospace', width: 48, textAlign: 'right' }}>{letter}</span>
               <span style={{ fontSize: 20, color: 'rgba(255,255,255,0.20)' }}>—</span>

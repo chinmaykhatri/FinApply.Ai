@@ -4,13 +4,12 @@ import { useRouter } from 'next/navigation';
 import PillButton from '@/components/ui/PillButton';
 import anime from 'animejs';
 
+
 const VIDEO_URL = 'https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260217_030345_246c0224-10a4-422c-b324-070b7c0eceda.mp4';
 
 export default function Hero() {
   const router = useRouter();
   const sectionRef = useRef<HTMLElement>(null);
-  const statsRef = useRef<HTMLDivElement>(null);
-  const [statsVisible, setStatsVisible] = useState(false);
   const [isRegistered, setIsRegistered] = useState(false);
 
   useEffect(() => {
@@ -60,45 +59,7 @@ export default function Hero() {
       }, '-=400');
   }, []);
 
-  // Count-up for stats
-  useEffect(() => {
-    if (!statsVisible) return;
 
-    const counts = [
-      { target: '.stat-num-0', value: 90, suffix: ' min' },
-      { target: '.stat-num-1', value: 4, suffix: '' },
-      { target: '.stat-num-2', value: 48, suffix: 'h' },
-    ];
-
-    counts.forEach(({ target, value, suffix }, i) => {
-      const el = document.querySelector(target);
-      if (!el) return;
-      const obj = { v: 0 };
-      anime({
-        targets: obj,
-        v: value,
-        round: 1,
-        duration: 1800,
-        delay: i * 200,
-        easing: 'easeOutExpo',
-        update: () => {
-          (el as HTMLElement).textContent = `${obj.v}${suffix}`;
-        },
-      });
-    });
-  }, [statsVisible]);
-
-  // Observe stats for count-up trigger
-  useEffect(() => {
-    const el = statsRef.current;
-    if (!el) return;
-    const obs = new IntersectionObserver(
-      ([e]) => { if (e.isIntersecting) { setStatsVisible(true); obs.disconnect(); } },
-      { threshold: 0.5 }
-    );
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, []);
 
   // Split headline into word spans
   const headline = 'Prove How You Think. Not Just What You Know.';
@@ -239,8 +200,8 @@ export default function Hero() {
           }}
         >
           FinApply gives finance candidates a verified capability score based on real deal
-          simulations — not resumes. One 45-minute simulation. One honest signal. Employers
-          actually trust it.
+          simulations — not resumes. One 45-minute simulation. One honest signal. Built for
+          employers to trust it.
         </p>
 
         {/* CTA */}
@@ -250,40 +211,27 @@ export default function Hero() {
           </PillButton>
         </div>
 
-        {/* Stats Bar — count-up */}
+        {/* Stats Bar — static values */}
         <div
-          ref={statsRef}
           style={{
             display: 'flex',
             width: '100%',
             maxWidth: 680,
             marginTop: 56,
-            opacity: statsVisible ? 1 : 0,
-            transition: 'opacity 0.6s ease',
           }}
         >
-          {[
-            { label: 'Deal Room simulation', className: 'stat-num-0', initial: '0 min' },
-            { label: 'Capability dimensions scored', className: 'stat-num-1', initial: '0' },
-            { label: 'FISS Report delivered', className: 'stat-num-2', initial: '0h' },
-          ].map((stat, i) => (
-            <div
-              key={i}
-              style={{
-                flex: 1,
-                textAlign: 'center',
-                borderRight: i < 2 ? '1px solid rgba(255,255,255,0.15)' : 'none',
-                padding: '0 16px',
-              }}
-            >
-              <p className={stat.className} style={{ fontSize: 32, fontWeight: 600, color: '#fff' }}>
-                {stat.initial}
-              </p>
-              <p style={{ fontSize: 13, fontWeight: 500, color: 'rgba(255,255,255,0.60)', marginTop: 4 }}>
-                {stat.label}
-              </p>
-            </div>
-          ))}
+          <div style={{ flex: 1, textAlign: 'center', borderRight: '1px solid rgba(255,255,255,0.15)', padding: '0 16px' }}>
+            <p style={{ fontSize: 32, fontWeight: 600, color: '#fff' }}>45</p>
+            <p style={{ fontSize: 13, fontWeight: 500, color: 'rgba(255,255,255,0.60)', marginTop: 4 }}>min Deal Room simulation</p>
+          </div>
+          <div style={{ flex: 1, textAlign: 'center', borderRight: '1px solid rgba(255,255,255,0.15)', padding: '0 16px' }}>
+            <p style={{ fontSize: 32, fontWeight: 600, color: '#fff' }}>4</p>
+            <p style={{ fontSize: 13, fontWeight: 500, color: 'rgba(255,255,255,0.60)', marginTop: 4 }}>Capability dimensions scored</p>
+          </div>
+          <div style={{ flex: 1, textAlign: 'center', padding: '0 16px' }}>
+            <p style={{ fontSize: 24, fontWeight: 600, color: '#fff' }}>in minutes</p>
+            <p style={{ fontSize: 13, fontWeight: 500, color: 'rgba(255,255,255,0.60)', marginTop: 4 }}>Get your FISS Report</p>
+          </div>
         </div>
       </div>
 

@@ -11,10 +11,10 @@ export default function FissPreview() {
   const scoreRef = useRef<HTMLSpanElement>(null);
 
   const dimensions = [
-    { name: 'Financial Reasoning', score: 21, total: 25, width: 84, grade: 'Strong', gradeColor: '#16A34A', gradeBg: 'rgba(22,163,74,0.15)', gradeBorder: 'rgba(22,163,74,0.30)' },
-    { name: 'Structured Thinking', score: 17, total: 25, width: 68, grade: 'Adequate', gradeColor: '#D97706', gradeBg: 'rgba(215,119,6,0.15)', gradeBorder: 'rgba(215,119,6,0.30)' },
-    { name: 'Risk Identification', score: 19, total: 25, width: 76, grade: 'Strong', gradeColor: '#16A34A', gradeBg: 'rgba(22,163,74,0.15)', gradeBorder: 'rgba(22,163,74,0.30)' },
-    { name: 'Decision Clarity', score: 14, total: 25, width: 56, grade: 'Developing', gradeColor: '#DC2626', gradeBg: 'rgba(220,38,38,0.15)', gradeBorder: 'rgba(220,38,38,0.30)' },
+    { name: 'Financial Reasoning', score: 19, total: 25, width: 76, grade: 'Adequate', gradeColor: '#D97706', gradeBg: 'rgba(215,119,6,0.15)', gradeBorder: 'rgba(215,119,6,0.30)' },
+    { name: 'Structured Thinking', score: 21, total: 25, width: 84, grade: 'Strong', gradeColor: '#16A34A', gradeBg: 'rgba(22,163,74,0.15)', gradeBorder: 'rgba(22,163,74,0.30)' },
+    { name: 'Risk Identification', score: 16, total: 25, width: 64, grade: 'Adequate', gradeColor: '#D97706', gradeBg: 'rgba(215,119,6,0.15)', gradeBorder: 'rgba(215,119,6,0.30)' },
+    { name: 'Decision Clarity', score: 18, total: 25, width: 72, grade: 'Adequate', gradeColor: '#D97706', gradeBg: 'rgba(215,119,6,0.15)', gradeBorder: 'rgba(215,119,6,0.30)' },
   ];
 
   useEffect(() => {
