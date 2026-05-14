@@ -6,9 +6,9 @@ export default function LogoReveal({ onComplete }: { onComplete: () => void }) {
   const [phase, setPhase] = useState<'mark' | 'text' | 'fadeout'>('mark');
 
   useEffect(() => {
-    const t1 = setTimeout(() => setPhase('text'), 400);
-    const t2 = setTimeout(() => setPhase('fadeout'), 1200);
-    const t3 = setTimeout(() => onComplete(), 1800);
+    const t1 = setTimeout(() => setPhase('text'), 200);
+    const t2 = setTimeout(() => setPhase('fadeout'), 550);
+    const t3 = setTimeout(() => onComplete(), 900);
 
     return () => {
       clearTimeout(t1);

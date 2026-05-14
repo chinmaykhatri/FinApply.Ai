@@ -233,6 +233,17 @@ export default function Hero() {
             <p style={{ fontSize: 13, fontWeight: 500, color: 'rgba(255,255,255,0.60)', marginTop: 4 }}>Get your FISS Report</p>
           </div>
         </div>
+
+        {/* Social proof */}
+        <p style={{
+          fontSize: 13,
+          fontWeight: 500,
+          color: 'rgba(255,255,255,0.40)',
+          marginTop: 20,
+          letterSpacing: 0.5,
+        }}>
+          Join 50+ candidates who&apos;ve proven their capability
+        </p>
       </div>
 
       <style jsx>{`

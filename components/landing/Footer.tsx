@@ -38,6 +38,12 @@ export default function Footer() {
       >
         chinmay@finapply.ai
       </a>
+      <a
+        href="/privacy"
+        style={{ fontSize: 13, color: 'rgba(255,255,255,0.40)' }}
+      >
+        Privacy Policy
+      </a>
 
       <style jsx>{`
         @media (max-width: 768px) {
