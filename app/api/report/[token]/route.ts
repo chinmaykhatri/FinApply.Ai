@@ -48,6 +48,12 @@ export async function GET(
       return NextResponse.json({ error: 'Report not found' }, { status: 404 });
     }
 
+    // SECURITY: Only serve report when status indicates it's been generated
+    const reportReadyStatuses = ['scored', 'report_sent'];
+    if (!reportReadyStatuses.includes(app.status)) {
+      return NextResponse.json({ error: 'Report not yet available' }, { status: 403 });
+    }
+
     // SECURITY: strip email, deal_room_token, report_token from response
     return NextResponse.json({ data: app });
   } catch {

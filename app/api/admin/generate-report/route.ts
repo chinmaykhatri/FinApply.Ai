@@ -1,25 +1,29 @@
 import { NextResponse, NextRequest } from 'next/server';
+import { createAdminClient } from '@/lib/supabase/admin';
+import { applyRateLimit, auditLog } from '@/lib/security';
 
 /* POST /api/admin/generate-report — Return report URL (PDF generated client-side via jsPDF) */
 export async function POST(request: NextRequest) {
   try {
+    // Rate limit: 10 per minute per IP
+    const limited = applyRateLimit(request, 'api');
+    if (limited) {
+      auditLog('api.rate_limited', { endpoint: '/api/admin/generate-report' }, request);
+      return limited;
+    }
+
     const { application_id } = await request.json();
 
     if (!application_id) {
       return NextResponse.json({ error: 'Missing application_id' }, { status: 400 });
     }
 
-    // Dynamic import supabase to avoid build issues
-    const { createClient } = await import('@supabase/supabase-js');
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
+    const supabase = createAdminClient();
 
     // Fetch application
     const { data: app, error: appErr } = await supabase
       .from('applications')
-      .select('*')
+      .select('id, report_token')
       .eq('id', application_id)
       .single();
 
@@ -30,7 +34,7 @@ export async function POST(request: NextRequest) {
     // Fetch FISS report
     const { data: report, error: repErr } = await supabase
       .from('fiss_reports')
-      .select('*')
+      .select('id, total_score')
       .eq('application_id', application_id)
       .order('created_at', { ascending: false })
       .limit(1)
@@ -42,6 +46,11 @@ export async function POST(request: NextRequest) {
 
     // Return the interactive report URL — PDF is generated client-side via jsPDF
     const reportUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://finapply-ai-delta.vercel.app'}/report/${app.report_token}`;
+
+    auditLog('admin.action', {
+      action: 'generate_report',
+      application_id,
+    }, request);
 
     return NextResponse.json({
       success: true,

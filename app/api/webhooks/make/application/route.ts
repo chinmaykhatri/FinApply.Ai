@@ -1,7 +1,6 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { applyRateLimit, sanitizeString, isValidEmail, auditLog, verifyHMAC } from '@/lib/security';
-import crypto from 'crypto';
+import { applyRateLimit, sanitizeString, isValidEmail, auditLog } from '@/lib/security';
 
 /* POST /api/webhooks/make/application — Receive Tally form data via Make.com */
 export async function POST(request: NextRequest) {
@@ -27,17 +26,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
     }
 
-    // Verify via header or body secret
-    const headerMatch = authHeader === `Bearer ${webhookSecret}`;
-    const bodyMatch = body.webhook_secret === webhookSecret;
-
-    if (!headerMatch && !bodyMatch) {
+    // SECURITY: Only verify via Authorization header — body secrets risk being logged
+    if (!webhookSecret || authHeader !== `Bearer ${webhookSecret}`) {
       auditLog('webhook.invalid', {
         endpoint: '/api/webhooks/make/application',
-        reason: 'Invalid webhook secret',
+        reason: 'Invalid or missing Authorization header',
       }, request);
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    // Strip webhook_secret from body if accidentally included
+    delete body.webhook_secret;
 
     const {
       full_name, email, linkedin_url,

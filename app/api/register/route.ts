@@ -69,25 +69,14 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
-      // Handle duplicate email — return existing tokens
+      // Handle duplicate email — do NOT expose existing tokens
       if (error.code === '23505' && error.message?.includes('email')) {
-        const { data: existing } = await supabase
-          .from('applications')
-          .select('id, deal_room_token, report_token')
-          .eq('email', sanitized.email)
-          .single();
-
-        if (existing) {
-          return NextResponse.json({
-            success: true,
-            existing: true,
-            data: {
-              id: existing.id,
-              deal_room_token: existing.deal_room_token,
-              report_token: existing.report_token,
-            },
-          }, { status: 200 });
-        }
+        // SECURITY: Return generic message — prevents token theft via email guessing
+        return NextResponse.json({
+          success: true,
+          existing: true,
+          message: 'An account with this email already exists. Check your email for your Deal Room link.',
+        }, { status: 200 });
       }
       console.error('Supabase insert error:', error.message);
       return NextResponse.json({ error: 'Failed to submit registration' }, { status: 500 });

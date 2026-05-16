@@ -6,9 +6,12 @@ export const runtime = 'edge';
 /* GET /api/og?name=John&score=85 — Dynamic OG image for FISS reports */
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const name = searchParams.get('name') || 'Candidate';
-  const score = searchParams.get('score') || '--';
-  const scoreNum = parseInt(score) || 0;
+  // Sanitize: truncate, strip HTML/special chars
+  const rawName = (searchParams.get('name') || 'Candidate').slice(0, 60).replace(/[<>"'&]/g, '');
+  const name = rawName || 'Candidate';
+  const rawScore = parseInt(searchParams.get('score') || '0') || 0;
+  const scoreNum = Math.max(0, Math.min(100, rawScore));
+  const score = String(scoreNum) || '--';
 
   const scoreColor = scoreNum >= 80 ? '#16A34A' : scoreNum >= 60 ? '#2563EB' : scoreNum >= 40 ? '#D97706' : '#DC2626';
 

@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS applications (
   target_role TEXT NOT NULL,
   essay TEXT NOT NULL,
   status TEXT NOT NULL DEFAULT 'applied'
-    CHECK (status IN ('applied', 'dealroom_sent', 'submitted', 'scored', 'report_sent', 'rejected')),
+    CHECK (status IN ('applied', 'dealroom_sent', 'submitted', 'scored', 'report_sent', 'rejected', 'eval_failed')),
   deal_room_token TEXT UNIQUE,
   report_token TEXT UNIQUE,
   created_at TIMESTAMPTZ DEFAULT now(),

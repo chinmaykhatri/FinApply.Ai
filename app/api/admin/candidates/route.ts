@@ -8,7 +8,13 @@ export async function GET() {
 
     const { data, error } = await supabase
       .from('applications')
-      .select('*, simulations(*), fiss_reports(*)')
+      .select(`
+        id, full_name, email, target_role, status,
+        college_or_firm, city, current_status,
+        created_at, updated_at,
+        simulations (id, case_code, word_count, time_taken_seconds, submitted_at, integrity_score, tab_violations, paste_count),
+        fiss_reports (id, total_score, percentile, financial_reasoning, structured_thinking, risk_identification, decision_clarity, standout_strength, critical_gap, evaluator_summary, created_at)
+      `)
       .order('created_at', { ascending: false });
 
     if (error) {

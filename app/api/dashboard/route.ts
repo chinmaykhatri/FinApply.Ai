@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
     const normalizedEmail = sanitizeString(email, 254).toLowerCase();
     const supabase = createAdminClient();
 
-    // Fetch applications — EXCLUDE sensitive tokens from response
+    // Fetch applications — SECURITY: exclude deal_room_token and report_token
     const { data: applications, error } = await supabase
       .from('applications')
       .select(`
@@ -30,8 +30,6 @@ export async function POST(request: NextRequest) {
         email,
         target_role,
         status,
-        deal_room_token,
-        report_token,
         created_at,
         updated_at
       `)
@@ -44,8 +42,8 @@ export async function POST(request: NextRequest) {
     }
 
     if (!applications || applications.length === 0) {
-      // Return generic message — don't confirm email existence
-      return NextResponse.json({ error: 'No applications found' }, { status: 404 });
+      // SECURITY: Return 200 with empty data — prevents email enumeration
+      return NextResponse.json({ success: true, data: [] }, { status: 200 });
     }
 
     // For each application, fetch report and simulation (without exposing tokens)

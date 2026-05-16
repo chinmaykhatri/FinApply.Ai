@@ -4,6 +4,19 @@ import { rateLimit } from '@/lib/rate-limit';
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'chinmaykhatri495@gmail.com';
 
+/**
+ * Edge-compatible constant-time string comparison.
+ * Prevents timing attacks on secret comparison.
+ */
+function constantTimeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let result = 0;
+  for (let i = 0; i < a.length; i++) {
+    result |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return result === 0;
+}
+
 export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
 
@@ -106,7 +119,7 @@ export async function middleware(request: NextRequest) {
     const internalSecret = request.headers.get('x-internal-secret');
     const expectedSecret = process.env.ADMIN_API_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-    if (internalSecret && expectedSecret && internalSecret === expectedSecret) {
+    if (internalSecret && expectedSecret && constantTimeEqual(internalSecret, expectedSecret)) {
       return response;
     }
 
