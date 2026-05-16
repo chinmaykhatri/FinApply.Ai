@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     // 1. Fetch simulation content
     const { data: sim, error: simErr } = await supabase
       .from('simulations')
-      .select('*')
+      .select('id, application_id, case_code, content, word_count, time_taken_seconds, started_at, submitted_at, tab_violations, paste_count, large_paste_count, typing_bursts, integrity_score')
       .eq('id', simulation_id)
       .single();
 
@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
     // 2. Fetch application for target_role
     const { data: app, error: appErr } = await supabase
       .from('applications')
-      .select('*')
+      .select('id, full_name, email, target_role, status, report_token')
       .eq('id', application_id)
       .single();
 

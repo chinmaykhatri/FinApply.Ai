@@ -21,7 +21,8 @@ export async function POST(request: NextRequest) {
     const normalizedEmail = sanitizeString(email, 254).toLowerCase();
     const supabase = createAdminClient();
 
-    // Fetch applications — SECURITY: exclude deal_room_token and report_token
+    // Fetch applications — user's own data (email-verified ownership)
+    // Tokens are needed for navigation to /dealroom/[token] and /report/[token]
     const { data: applications, error } = await supabase
       .from('applications')
       .select(`
@@ -30,6 +31,8 @@ export async function POST(request: NextRequest) {
         email,
         target_role,
         status,
+        deal_room_token,
+        report_token,
         created_at,
         updated_at
       `)
