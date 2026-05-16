@@ -464,12 +464,22 @@ export default function DashboardPage() {
                         <div style={{
                           display: 'flex', alignItems: 'center', gap: 8,
                           padding: '8px 16px', borderRadius: 100,
-                          background: 'rgba(217,119,6,0.08)',
-                          border: '1px solid rgba(217,119,6,0.20)',
+                          background: app.status === 'eval_failed'
+                            ? 'rgba(239,68,68,0.08)'
+                            : 'rgba(217,119,6,0.08)',
+                          border: app.status === 'eval_failed'
+                            ? '1px solid rgba(239,68,68,0.20)'
+                            : '1px solid rgba(217,119,6,0.20)',
                         }}>
                           <div className="spinner" style={{ width: 14, height: 14, borderWidth: 2 }} />
-                          <span style={{ fontSize: 13, color: '#D97706', fontWeight: 500 }}>
-                            Evaluation in progress — report coming soon
+                          <span style={{
+                            fontSize: 13,
+                            color: app.status === 'eval_failed' ? '#EF4444' : '#D97706',
+                            fontWeight: 500,
+                          }}>
+                            {app.status === 'eval_failed'
+                              ? 'Evaluation delayed — our team is retrying your report'
+                              : 'Evaluation in progress — report coming soon'}
                           </span>
                         </div>
                       )}

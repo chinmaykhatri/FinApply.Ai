@@ -87,9 +87,7 @@ CREATE POLICY "Allow anonymous simulation insert" ON simulations
 CREATE POLICY "Admin full access on fiss_reports" ON fiss_reports
   FOR ALL TO authenticated USING (true) WITH CHECK (true);
 
--- Allow anonymous reads on applications (for report page lookup)
-CREATE POLICY "Allow anonymous read by report_token" ON applications
-  FOR SELECT TO anon USING (true);
-
-CREATE POLICY "Allow anonymous read fiss_reports" ON fiss_reports
-  FOR SELECT TO anon USING (true);
+-- Anonymous reads: RESTRICTED
+-- All data access goes through server-side API routes using createAdminClient()
+-- which bypasses RLS entirely. No anon SELECT policies needed.
+-- This prevents anyone with the Supabase anon key from querying all data.

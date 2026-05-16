@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Navbar from '@/components/landing/Navbar';
+import Footer from '@/components/landing/Footer';
 import PillButton from '@/components/ui/PillButton';
 
 export const metadata: Metadata = {
@@ -115,6 +116,24 @@ const ROLES = [
   { color: '#0891B2', name: 'Big 4 Advisory', sub: 'Due diligence · Restructuring · Valuation' },
   { color: '#059669', name: 'Corporate Finance', sub: 'Capital structure · Treasury · FP&A' },
   { color: '#D97706', name: 'Equity Research', sub: 'Coverage · Earnings · Investment thesis' },
+];
+
+/* ═══════ FISS DIMENSIONS ═══════ */
+const FISS = [
+  { abbr: 'FR', name: 'Financial Reasoning', weight: '/25', color: '#2563EB', desc: 'Do the numbers drive your recommendation — or just decorate it?' },
+  { abbr: 'ST', name: 'Structured Thinking', weight: '/25', color: '#7C3AED', desc: 'Does your analysis move from data to insight to conclusion?' },
+  { abbr: 'RI', name: 'Risk Identification', weight: '/25', color: '#0891B2', desc: 'Are your risks specific mechanisms — or just generic labels?' },
+  { abbr: 'DC', name: 'Decision Clarity', weight: '/25', color: '#059669', desc: 'Can you commit to a recommendation under deliberate uncertainty?' },
+];
+
+/* ═══════ FAQ ═══════ */
+const FAQS = [
+  { q: 'Can I retake the Deal Room?', a: 'Not in the current cohort. One submission, one score. This is by design — real analyst work does not come with retakes.' },
+  { q: 'What if my internet drops mid-simulation?', a: 'Your work is auto-saved every 30 seconds. When you reconnect, your progress is restored and your timer continues from where it paused.' },
+  { q: 'Is the Deal Room free?', a: 'Yes, completely free for the founding cohort. No credit card, no hidden fees.' },
+  { q: 'Do I need Excel or any external tools?', a: 'No. Everything happens inside the browser. Your analysis is written directly into the response area.' },
+  { q: 'How is the FISS Score different from a mock interview?', a: 'Mock interviews test your ability to perform for an interviewer. The FISS Score tests your ability to analyse — quietly, independently, under real pressure. Different skills.' },
+  { q: 'Who sees my score?', a: 'Only you, unless you choose to share it. Your FISS Report includes a shareable link you can add to your resume or LinkedIn.' },
 ];
 
 export default function DealRoomExplainedPage() {
@@ -479,7 +498,97 @@ export default function DealRoomExplainedPage() {
         </p>
       </section>
 
-      {/* ════════ SECTION 7 — CTA ════════ */}
+      {/* ════════ SECTION 7 — HOW YOU'RE SCORED ════════ */}
+      <section style={{
+        padding: '100px 120px',
+        borderTop: '1px solid rgba(255,255,255,0.06)',
+      }}>
+        <div style={{ maxWidth: 800, margin: '0 auto', textAlign: 'center' }}>
+          <p style={{ ...SECTION_LABEL, textAlign: 'center' }}>YOUR FISS SCORE</p>
+          <h2 className="dealroom-section-heading" style={{
+            ...GRADIENT_TEXT,
+            fontSize: 36,
+            fontWeight: 500,
+            lineHeight: 1.2,
+            margin: '0 auto 20px',
+          }}>
+            Four dimensions. One honest signal.
+          </h2>
+          <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.50)', maxWidth: 560, margin: '0 auto 48px', lineHeight: 1.7 }}>
+            Every response is evaluated across four dimensions that mirror what senior analysts actually look for when reviewing junior work.
+          </p>
+
+          <div className="dealroom-fiss-grid" style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(4, 1fr)',
+            gap: 16,
+          }}>
+            {FISS.map((d) => (
+              <div key={d.abbr} style={{
+                background: 'rgba(255,255,255,0.03)',
+                border: '1px solid rgba(255,255,255,0.08)',
+                borderRadius: 16,
+                padding: '28px 20px',
+                textAlign: 'center',
+                transition: 'border-color 300ms ease, transform 300ms ease',
+              }}>
+                <div style={{
+                  width: 48, height: 48, borderRadius: 12,
+                  background: `${d.color}18`,
+                  border: `1px solid ${d.color}30`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  margin: '0 auto 16px',
+                  fontSize: 16, fontWeight: 700, color: d.color,
+                }}>{d.abbr}</div>
+                <div style={{ fontSize: 15, fontWeight: 600, color: '#fff', marginBottom: 4 }}>{d.name}</div>
+                <div style={{ fontSize: 12, color: d.color, fontWeight: 500, marginBottom: 12 }}>{d.weight}</div>
+                <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', lineHeight: 1.6, margin: 0 }}>{d.desc}</p>
+              </div>
+            ))}
+          </div>
+
+          <div style={{ marginTop: 32 }}>
+            <PillButton variant="outline" href="/fiss-score">
+              Learn More About the FISS Score →
+            </PillButton>
+          </div>
+        </div>
+      </section>
+
+      {/* ════════ SECTION 8 — FAQ ════════ */}
+      <section style={{
+        background: 'rgba(255,255,255,0.02)',
+        borderTop: '1px solid rgba(255,255,255,0.06)',
+        padding: '80px 120px',
+      }}>
+        <div style={{ maxWidth: 640, margin: '0 auto' }}>
+          <p style={{ ...SECTION_LABEL, textAlign: 'center' }}>COMMON QUESTIONS</p>
+          <h2 className="dealroom-section-heading" style={{
+            ...GRADIENT_TEXT,
+            fontSize: 36,
+            fontWeight: 500,
+            lineHeight: 1.2,
+            margin: '0 auto 48px',
+            textAlign: 'center',
+          }}>
+            Before you begin.
+          </h2>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+            {FAQS.map((faq, i) => (
+              <div key={i} style={{
+                borderBottom: '1px solid rgba(255,255,255,0.06)',
+                padding: '24px 0',
+              }}>
+                <h4 style={{ fontSize: 16, fontWeight: 600, color: '#fff', marginBottom: 8 }}>{faq.q}</h4>
+                <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.50)', lineHeight: 1.7, margin: 0 }}>{faq.a}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ════════ SECTION 9 — CTA ════════ */}
       <section style={{
         padding: '80px 120px',
         textAlign: 'center',
@@ -498,12 +607,14 @@ export default function DealRoomExplainedPage() {
           color: 'rgba(255,255,255,0.55)',
           marginBottom: 32,
         }}>
-          Apply for your Deal Room. Free for founding cohort candidates.
+          One simulation. One honest signal. Free for founding cohort candidates.
         </p>
         <PillButton variant="secondary" href="/#apply">
-          Apply for Beta Access
+          Start Your Simulation
         </PillButton>
       </section>
+
+      <Footer />
 
       {/* ════════ RESPONSIVE STYLES ════════ */}
       <style>{`
@@ -515,6 +626,7 @@ export default function DealRoomExplainedPage() {
           .dealroom-stats > div:first-child { border-top: none !important; }
           .dealroom-section-heading { font-size: 28px !important; }
           .dealroom-task-grid { grid-template-columns: 1fr !important; }
+          .dealroom-fiss-grid { grid-template-columns: repeat(2, 1fr) !important; }
           .dealroom-prose { padding: 0 !important; }
           .dealroom-roles { flex-direction: column !important; align-items: stretch !important; }
           section { padding-left: 40px !important; padding-right: 40px !important; }
@@ -522,6 +634,7 @@ export default function DealRoomExplainedPage() {
         @media (max-width: 480px) {
           section { padding-left: 24px !important; padding-right: 24px !important; }
           .dealroom-hero-heading { font-size: 28px !important; }
+          .dealroom-fiss-grid { grid-template-columns: 1fr !important; }
         }
       `}</style>
     </div>

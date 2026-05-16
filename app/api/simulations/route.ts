@@ -94,23 +94,79 @@ export async function POST(request: NextRequest) {
       .update({ status: 'submitted', updated_at: new Date().toISOString() })
       .eq('id', application_id);
 
-    // 3. Auto-trigger AI evaluation (non-blocking, with internal auth)
+    // 3. Auto-trigger AI evaluation with retry logic
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://finapply-ai-delta.vercel.app';
     const internalSecret = process.env.ADMIN_API_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
-    fetch(`${baseUrl}/api/admin/evaluate`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-internal-secret': internalSecret,
-      },
-      body: JSON.stringify({
-        application_id,
-        simulation_id: sim.id,
-      }),
-    }).catch((err) => {
-      console.error('Auto-evaluate trigger failed (non-blocking):', err.message);
-    });
+    if (!internalSecret) {
+      console.error('[CRITICAL] Neither ADMIN_API_SECRET nor SUPABASE_SERVICE_ROLE_KEY is set. Auto-evaluation WILL fail.');
+    }
+
+    // Non-blocking evaluation with 3 retries + exponential backoff
+    (async () => {
+      const MAX_RETRIES = 3;
+      const BASE_DELAY_MS = 2000; // 2s, 4s, 8s
+
+      for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+        try {
+          console.log(`[EVAL] Attempt ${attempt}/${MAX_RETRIES} for app=${application_id}`);
+
+          const evalRes = await fetch(`${baseUrl}/api/admin/evaluate`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-internal-secret': internalSecret,
+            },
+            body: JSON.stringify({
+              application_id,
+              simulation_id: sim.id,
+            }),
+          });
+
+          if (evalRes.ok) {
+            console.log(`[EVAL OK] Auto-evaluation succeeded for app=${application_id} on attempt ${attempt}`);
+            return; // Success — exit retry loop
+          }
+
+          // HTTP error — log details
+          const errBody = await evalRes.text().catch(() => 'no body');
+          console.error(
+            `[EVAL FAILED] HTTP ${evalRes.status} on attempt ${attempt}/${MAX_RETRIES}.`,
+            `Secret present: ${!!internalSecret}`,
+            `Body: ${errBody.slice(0, 300)}`,
+            `App: ${application_id}, Sim: ${sim.id}`
+          );
+
+          // Don't retry on auth errors (401/403/404) — they won't resolve themselves
+          if (evalRes.status === 401 || evalRes.status === 403 || evalRes.status === 404) {
+            console.error(`[EVAL ABORT] Auth failure (${evalRes.status}). Check ADMIN_API_SECRET env var.`);
+            break;
+          }
+        } catch (err) {
+          console.error(
+            `[EVAL NETWORK ERROR] Attempt ${attempt}/${MAX_RETRIES}:`,
+            err instanceof Error ? err.message : err
+          );
+        }
+
+        // Wait before retry (exponential backoff: 2s, 4s, 8s)
+        if (attempt < MAX_RETRIES) {
+          const delay = BASE_DELAY_MS * Math.pow(2, attempt - 1);
+          await new Promise(r => setTimeout(r, delay));
+        }
+      }
+
+      // All retries exhausted — mark for admin recovery
+      console.error(`[EVAL EXHAUSTED] All ${MAX_RETRIES} attempts failed for app=${application_id}. Marking eval_failed.`);
+      try {
+        await supabase
+          .from('applications')
+          .update({ status: 'eval_failed', updated_at: new Date().toISOString() })
+          .eq('id', application_id);
+      } catch (dbErr) {
+        console.error('[EVAL] Could not update status to eval_failed:', dbErr);
+      }
+    })();
 
     auditLog('admin.action', {
       action: 'simulation_submitted',

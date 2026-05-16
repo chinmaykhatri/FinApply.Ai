@@ -12,6 +12,9 @@ export async function POST(request: NextRequest) {
     // Allow internal server-to-server calls (from /api/simulations auto-trigger)
     // Middleware handles admin browser sessions; this handles programmatic access
     const isInternalCall = verifyInternalAuth(request);
+    
+    console.log(`[EVALUATE] Endpoint hit. Internal auth: ${isInternalCall}`);
+    
     if (!isInternalCall) {
       // If not internal, middleware will have already validated admin session
       // But add rate limiting for safety
@@ -25,8 +28,11 @@ export async function POST(request: NextRequest) {
     const { application_id, simulation_id } = await request.json();
 
     if (!application_id || !simulation_id) {
+      console.error('[EVALUATE] Missing IDs:', { application_id, simulation_id });
       return NextResponse.json({ error: 'Missing application_id or simulation_id' }, { status: 400 });
     }
+    
+    console.log(`[EVALUATE] Processing: app=${application_id}, sim=${simulation_id}`);
 
     const supabase = createAdminClient();
 
