@@ -69,7 +69,7 @@ export default function PrivacyPage() {
           </PolicySection>
 
           <PolicySection title="4. Data Retention">
-            <p>Your registration data and FISS reports are retained for 24 months from account creation. You may request deletion at any time by emailing <a href="mailto:chinmay@finapply.ai" style={{ color: '#2563EB' }}>chinmay@finapply.ai</a>.</p>
+            <p>Your registration data and FISS reports are retained for 24 months from account creation. You may request deletion at any time by emailing <a href="mailto:chinmay.finapply.ai@gmail.com" style={{ color: '#2563EB' }}>chinmay.finapply.ai@gmail.com</a>.</p>
           </PolicySection>
 
           <PolicySection title="5. Security">
@@ -90,7 +90,7 @@ export default function PrivacyPage() {
               <li>Request deletion of your data</li>
               <li>Withdraw consent for employer data sharing</li>
             </ul>
-            <p>To exercise these rights, email <a href="mailto:chinmay@finapply.ai" style={{ color: '#2563EB' }}>chinmay@finapply.ai</a>.</p>
+            <p>To exercise these rights, email <a href="mailto:chinmay.finapply.ai@gmail.com" style={{ color: '#2563EB' }}>chinmay.finapply.ai@gmail.com</a>.</p>
           </PolicySection>
 
           <PolicySection title="7. Contact">
@@ -98,7 +98,7 @@ export default function PrivacyPage() {
             <p style={{ marginTop: 8 }}>
               Chinmay Khatri<br />
               Founder, FinApply.ai<br />
-              <a href="mailto:chinmay@finapply.ai" style={{ color: '#2563EB' }}>chinmay@finapply.ai</a>
+              <a href="mailto:chinmay.finapply.ai@gmail.com" style={{ color: '#2563EB' }}>chinmay.finapply.ai@gmail.com</a>
             </p>
           </PolicySection>
         </div>

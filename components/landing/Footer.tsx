@@ -29,14 +29,11 @@ export default function Footer() {
       />
 
       <FinApplyLogo size="sm" />
-      <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.30)' }}>
-        © 2026 FinApply Technologies Pvt Ltd
-      </span>
       <a
-        href="mailto:chinmay@finapply.ai"
+        href="mailto:chinmay.finapply.ai@gmail.com"
         style={{ fontSize: 13, color: 'rgba(255,255,255,0.40)' }}
       >
-        chinmay@finapply.ai
+        chinmay.finapply.ai@gmail.com
       </a>
       <a
         href="/privacy"
