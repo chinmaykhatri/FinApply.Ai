@@ -565,7 +565,6 @@ export default function DealRoomPage() {
             }}>
               <p style={{ fontSize: 13, fontWeight: 600, color: '#DC2626', marginBottom: 8 }}>🛡️ Proctored Environment</p>
               <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.50)', lineHeight: 1.6, display: 'flex', flexDirection: 'column', gap: 4 }}>
-                <span>• Your camera will be activated for identity verification</span>
                 <span>• The exam runs in fullscreen mode — exiting is logged</span>
                 <span>• Switching tabs or windows is flagged as a violation</span>
                 <span>• After {MAX_TAB_VIOLATIONS} tab violations, your work auto-submits</span>
@@ -708,14 +707,6 @@ export default function DealRoomPage() {
           </span>
           {/* Proctoring status indicators */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{
-              fontSize: 10, fontWeight: 500, padding: '2px 8px', borderRadius: 100,
-              background: webcamStream ? 'rgba(22,163,74,0.12)' : 'rgba(220,38,38,0.12)',
-              border: `1px solid ${webcamStream ? 'rgba(22,163,74,0.25)' : 'rgba(220,38,38,0.25)'}`,
-              color: webcamStream ? '#16A34A' : '#DC2626',
-            }}>
-              {webcamStream ? '🔴 REC' : '⚠ CAM OFF'}
-            </span>
             {tabViolations > 0 && (
               <span style={{
                 fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 100,
@@ -1200,48 +1191,7 @@ Structure your response with clear sections:
         </div>
       )}
 
-      {/* ── Webcam Feed (bottom-right corner) ── */}
-      {phase === 'active' && (
-        <div style={{
-          position: 'fixed', bottom: 16, right: 16, zIndex: 100,
-          borderRadius: 12, overflow: 'hidden',
-          border: `2px solid ${webcamStream ? 'rgba(22,163,74,0.40)' : 'rgba(220,38,38,0.40)'}`,
-          background: '#000', boxShadow: '0 4px 24px rgba(0,0,0,0.60)',
-        }}>
-          {webcamStream ? (
-            <video
-              ref={webcamRef}
-              autoPlay
-              playsInline
-              muted
-              style={{ width: 160, height: 120, objectFit: 'cover', display: 'block' }}
-            />
-          ) : (
-            <div style={{
-              width: 160, height: 120, display: 'flex',
-              alignItems: 'center', justifyContent: 'center',
-              background: 'rgba(220,38,38,0.06)',
-            }}>
-              <span style={{ fontSize: 11, color: '#DC2626', textAlign: 'center', padding: 8 }}>
-                📷 Camera denied<br/>Flagged in report
-              </span>
-            </div>
-          )}
-          <div style={{
-            position: 'absolute', top: 6, left: 6,
-            display: 'flex', alignItems: 'center', gap: 4,
-          }}>
-            <div style={{
-              width: 8, height: 8, borderRadius: '50%',
-              background: webcamStream ? '#DC2626' : '#666',
-              animation: webcamStream ? 'blink 1.5s infinite' : 'none',
-            }} />
-            <span style={{ fontSize: 9, color: '#fff', fontWeight: 600, textShadow: '0 1px 4px rgba(0,0,0,0.80)' }}>
-              {webcamStream ? 'PROCTORED' : 'OFFLINE'}
-            </span>
-          </div>
-        </div>
-      )}
+
 
       {/* ── Fullscreen re-enter prompt ── */}
       {phase === 'active' && !isFullscreen && !showViolationWarning && (
