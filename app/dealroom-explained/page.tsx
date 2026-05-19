@@ -63,7 +63,7 @@ const STEPS = [
   },
   {
     title: 'You submit when ready or when time expires',
-    body: 'Once you submit, you cannot edit your response. A confirmation screen loads showing your submission details. Your response is evaluated immediately. Your FISS Score Report arrives within 48 hours.',
+    body: 'Once you submit, you cannot edit your response. A confirmation screen loads showing your submission details. Your response is evaluated immediately. Your FISS Score Report arrives the same day.',
   },
 ];
 
@@ -204,7 +204,7 @@ export default function DealRoomExplainedPage() {
             {[
               { value: '45', label: 'minutes' },
               { value: '1', label: 'submission' },
-              { value: '48h', label: 'FISS Report' },
+              { value: 'Same Day', label: 'FISS Report' },
             ].map((s, i) => (
               <div key={i} style={{
                 textAlign: 'center',

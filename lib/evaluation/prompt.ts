@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════
-   Claude Evaluation Prompt Builder — FinApply.ai
+   Gemini Evaluation Prompt Builder — FinApply.ai
    Constructs the structured prompt for FISS scoring
    ═══════════════════════════════════════════════ */
 
@@ -7,7 +7,7 @@ import type { EvaluationInput } from './types';
 import { ROLE_WEIGHT_MAP } from './types';
 
 /**
- * Build the complete evaluation prompt for Claude.
+ * Build the complete evaluation prompt for Gemini.
  * Interpolates case context, role weights, and candidate response.
  */
 export function buildEvaluationPrompt(input: EvaluationInput): string {

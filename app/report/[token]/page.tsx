@@ -4,8 +4,8 @@ import { useParams } from 'next/navigation';
 import ScoreRing from '@/components/report/ScoreRing';
 import DimensionCard from '@/components/ui/DimensionCard';
 import PillButton from '@/components/ui/PillButton';
-import { SAMPLE_REPORT } from '@/lib/types';
 import type { FissReport } from '@/lib/types';
+import { trackEvent, EVENTS } from '@/lib/analytics';
 
 type ReportData = Omit<FissReport, 'id' | 'application_id' | 'simulation_id' | 'created_at'>;
 
@@ -14,8 +14,8 @@ export default function ReportPage() {
   const token = params.token as string;
   const reportRef = useRef<HTMLDivElement>(null);
 
-  const [phase, setPhase] = useState<'loading' | 'invalid' | 'ready'>('loading');
-  const [report, setReport] = useState<ReportData>(SAMPLE_REPORT);
+  const [phase, setPhase] = useState<'loading' | 'invalid' | 'no_report' | 'ready'>('loading');
+  const [report, setReport] = useState<ReportData | null>(null);
   const [candidateName, setCandidateName] = useState('');
   const [candidateCollege, setCandidateCollege] = useState('');
   const [appId, setAppId] = useState('');
@@ -41,23 +41,27 @@ export default function ReportPage() {
           setAppId(app.id);
           setCandidateCollege(app.college_or_firm);
 
-          // If FISS report exists, use it; otherwise show sample
+          // Only display real report data — no fake fallbacks
           if (app.fiss_reports && app.fiss_reports.length > 0) {
             const r = app.fiss_reports[0];
             setReport({
               total_score: r.total_score,
               percentile: r.percentile || 'Founding Cohort — Batch 1',
-              financial_reasoning: r.financial_reasoning || SAMPLE_REPORT.financial_reasoning,
-              structured_thinking: r.structured_thinking || SAMPLE_REPORT.structured_thinking,
-              risk_identification: r.risk_identification || SAMPLE_REPORT.risk_identification,
-              decision_clarity: r.decision_clarity || SAMPLE_REPORT.decision_clarity,
-              standout_strength: r.standout_strength || SAMPLE_REPORT.standout_strength,
-              critical_gap: r.critical_gap || SAMPLE_REPORT.critical_gap,
-              evaluator_summary: r.evaluator_summary || SAMPLE_REPORT.evaluator_summary,
+              financial_reasoning: r.financial_reasoning,
+              structured_thinking: r.structured_thinking,
+              risk_identification: r.risk_identification,
+              decision_clarity: r.decision_clarity,
+              standout_strength: r.standout_strength || '',
+              critical_gap: r.critical_gap || '',
+              evaluator_summary: r.evaluator_summary || '',
             });
             if (r.loom_url) setLoomUrl(r.loom_url);
+            setPhase('ready');
+            trackEvent(EVENTS.REPORT_VIEW);
+          } else {
+            // Application exists but no report yet
+            setPhase('no_report');
           }
-          setPhase('ready');
         } else {
           setPhase('invalid');
         }
@@ -69,6 +73,8 @@ export default function ReportPage() {
   }, [token]);
 
   const handleDownloadPdf = async () => {
+    if (!report) return;
+    trackEvent(EVENTS.REPORT_DOWNLOAD);
     try {
       const { generateFissReportPdf } = await import('@/lib/generatePdf');
       generateFissReportPdf({
@@ -105,6 +111,50 @@ export default function ReportPage() {
           <h1 style={{ fontSize: 28, fontWeight: 600, color: '#fff' }}>Report Not Found</h1>
           <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.50)', marginTop: 16, lineHeight: 1.6 }}>
             This report link is invalid or has expired. Please check your email for the correct link.
+          </p>
+          <div style={{ marginTop: 32 }}>
+            <PillButton variant="secondary" href="/">
+              Return to FinApply.ai
+            </PillButton>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Application found but report not yet generated
+  if (phase === 'no_report') {
+    return (
+      <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+        <div style={{ maxWidth: 500, textAlign: 'center' }}>
+          <div style={{ fontSize: 48, marginBottom: 24 }}>⏳</div>
+          <h1 style={{ fontSize: 28, fontWeight: 600, color: '#fff' }}>Report In Progress</h1>
+          <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.50)', marginTop: 16, lineHeight: 1.6 }}>
+            {candidateName ? `Hi ${candidateName}, your` : 'Your'} FISS Score Report is being generated.
+            You&apos;ll receive an email once it&apos;s ready — typically within a few hours.
+          </p>
+          <div style={{ marginTop: 32, display: 'flex', gap: 12, justifyContent: 'center' }}>
+            <PillButton variant="secondary" href="/dashboard">
+              Go to Dashboard
+            </PillButton>
+            <PillButton variant="outline" href="/">
+              Return Home
+            </PillButton>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Guard: if report is null at this point, show error
+  if (!report) {
+    return (
+      <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+        <div style={{ maxWidth: 500, textAlign: 'center' }}>
+          <div style={{ fontSize: 48, marginBottom: 24 }}>⚠️</div>
+          <h1 style={{ fontSize: 28, fontWeight: 600, color: '#fff' }}>Something Went Wrong</h1>
+          <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.50)', marginTop: 16, lineHeight: 1.6 }}>
+            We couldn&apos;t load your report data. Please try refreshing the page or contact support.
           </p>
           <div style={{ marginTop: 32 }}>
             <PillButton variant="secondary" href="/">

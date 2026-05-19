@@ -25,8 +25,8 @@ interface AppData {
   email: string;
   target_role: string;
   status: string;
-  deal_room_token: string;
-  report_token: string;
+  has_deal_room: boolean;
+  has_report: boolean;
   created_at: string;
   updated_at: string;
   report: {
@@ -443,21 +443,55 @@ export default function DashboardPage() {
                       </div>
                     )}
 
-                    {/* Action buttons */}
+                    {/* Action buttons — tokens are in localStorage or email, not API */}
                     <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                       {/* Show Deal Room button if not yet submitted */}
-                      {!hasSim && app.deal_room_token && (
-                        <PillButton variant="primary" href={`/dealroom/${app.deal_room_token}`}>
-                          Enter Deal Room →
-                        </PillButton>
-                      )}
+                      {!hasSim && app.has_deal_room && (() => {
+                        const savedToken = typeof window !== 'undefined' ? localStorage.getItem('finapply_deal_token') : null;
+                        if (savedToken) {
+                          return (
+                            <PillButton variant="primary" href={`/dealroom/${savedToken}`}>
+                              Enter Deal Room →
+                            </PillButton>
+                          );
+                        }
+                        return (
+                          <div style={{
+                            display: 'flex', alignItems: 'center', gap: 8,
+                            padding: '8px 16px', borderRadius: 100,
+                            background: 'rgba(37,99,235,0.08)',
+                            border: '1px solid rgba(37,99,235,0.20)',
+                          }}>
+                            <span style={{ fontSize: 13, color: '#2563EB', fontWeight: 500 }}>
+                              📧 Check your email for the Deal Room link
+                            </span>
+                          </div>
+                        );
+                      })()}
 
                       {/* Show Report button if scored */}
-                      {hasReport && app.report_token && (
-                        <PillButton variant="primary" href={`/report/${app.report_token}`}>
-                          View FISS Report →
-                        </PillButton>
-                      )}
+                      {hasReport && app.has_report && (() => {
+                        const savedToken = typeof window !== 'undefined' ? localStorage.getItem('finapply_report_token') : null;
+                        if (savedToken) {
+                          return (
+                            <PillButton variant="primary" href={`/report/${savedToken}`}>
+                              View FISS Report →
+                            </PillButton>
+                          );
+                        }
+                        return (
+                          <div style={{
+                            display: 'flex', alignItems: 'center', gap: 8,
+                            padding: '8px 16px', borderRadius: 100,
+                            background: 'rgba(22,163,74,0.08)',
+                            border: '1px solid rgba(22,163,74,0.20)',
+                          }}>
+                            <span style={{ fontSize: 13, color: '#16A34A', fontWeight: 500 }}>
+                              📧 Check your email for the Report link
+                            </span>
+                          </div>
+                        );
+                      })()}
 
                       {/* Show pending status if submitted but not scored */}
                       {hasSim && !hasReport && app.status !== 'rejected' && (
@@ -482,13 +516,6 @@ export default function DashboardPage() {
                               : 'Evaluation in progress — report coming soon'}
                           </span>
                         </div>
-                      )}
-
-                      {/* Already submitted — show re-entry link */}
-                      {hasSim && app.deal_room_token && (
-                        <PillButton variant="outline" href={`/dealroom/${app.deal_room_token}`}>
-                          Review Submission
-                        </PillButton>
                       )}
                     </div>
                   </div>

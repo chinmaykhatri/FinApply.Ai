@@ -41,6 +41,12 @@ export default function Footer() {
       >
         Privacy Policy
       </a>
+      <a
+        href="/terms"
+        style={{ fontSize: 13, color: 'rgba(255,255,255,0.40)' }}
+      >
+        Terms of Service
+      </a>
 
       <style jsx>{`
         @media (max-width: 768px) {

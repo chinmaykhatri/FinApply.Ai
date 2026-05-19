@@ -16,6 +16,7 @@
     "@types/animejs": "^3.1.13",
     "@types/three": "^0.184.0",
     "animejs": "^3.2.2",
+    "inngest": "^4.4.0",
     "jspdf": "^4.2.1",
     "next": "^15.3.2",
     "nodemailer": "^8.0.7",

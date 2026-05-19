@@ -16,7 +16,7 @@ const STEPS = [
     step: 'Step 02',
     title: 'Receive Your FISS Score',
     description:
-      'Within 48 hours you receive a detailed FISS Score Report — your capability score across four dimensions with specific strengths, gaps, and improvement actions. Human-reviewed.',
+      'Receive your personalised FISS Score Report — same day. Four capability dimensions, actionable improvement advice, and your percentile rank.',
   },
   {
     step: 'Step 03',

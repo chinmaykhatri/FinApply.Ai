@@ -4,10 +4,21 @@ import { useRouter } from 'next/navigation';
 import PillButton from '@/components/ui/PillButton';
 import anime from 'animejs';
 
-
 const VIDEO_URL = 'https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260217_030345_246c0224-10a4-422c-b324-070b7c0eceda.mp4';
 
 export default function Hero() {
+  const [candidateCount, setCandidateCount] = useState<number | null>(null);
+
+  // Fetch live candidate count
+  useEffect(() => {
+    fetch('/api/stats')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.count > 0) setCandidateCount(data.count);
+      })
+      .catch(() => { /* fail silently — stat just won't show */ });
+  }, []);
+
   const router = useRouter();
   const sectionRef = useRef<HTMLElement>(null);
   const [isRegistered, setIsRegistered] = useState(false);
@@ -229,21 +240,23 @@ export default function Hero() {
             <p style={{ fontSize: 13, fontWeight: 500, color: 'rgba(255,255,255,0.60)', marginTop: 4 }}>Capability dimensions scored</p>
           </div>
           <div style={{ flex: 1, textAlign: 'center', padding: '0 16px' }}>
-            <p style={{ fontSize: 24, fontWeight: 600, color: '#fff' }}>in minutes</p>
-            <p style={{ fontSize: 13, fontWeight: 500, color: 'rgba(255,255,255,0.60)', marginTop: 4 }}>Get your FISS Report</p>
+            <p style={{ fontSize: 24, fontWeight: 600, color: '#fff' }}>Same Day</p>
+            <p style={{ fontSize: 13, fontWeight: 500, color: 'rgba(255,255,255,0.60)', marginTop: 4 }}>FISS Report Delivery</p>
           </div>
         </div>
 
-        {/* Social proof */}
-        <p style={{
-          fontSize: 13,
-          fontWeight: 500,
-          color: 'rgba(255,255,255,0.40)',
-          marginTop: 20,
-          letterSpacing: 0.5,
-        }}>
-          Join 50+ candidates who&apos;ve proven their capability
-        </p>
+        {/* Social proof — dynamic count from DB */}
+        {candidateCount !== null && candidateCount >= 10 && (
+          <p style={{
+            fontSize: 13,
+            fontWeight: 500,
+            color: 'rgba(255,255,255,0.40)',
+            marginTop: 20,
+            letterSpacing: 0.5,
+          }}>
+            Join {candidateCount}+ candidates who&apos;ve proven their capability
+          </p>
+        )}
       </div>
 
       <style jsx>{`

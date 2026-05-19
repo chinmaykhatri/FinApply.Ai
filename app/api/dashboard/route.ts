@@ -21,8 +21,9 @@ export async function POST(request: NextRequest) {
     const normalizedEmail = sanitizeString(email, 254).toLowerCase();
     const supabase = createAdminClient();
 
-    // Fetch applications — user's own data (email-verified ownership)
-    // Tokens are needed for navigation to /dealroom/[token] and /report/[token]
+    // Fetch applications — user's own data
+    // SECURITY: Tokens are NOT returned in the API response to prevent enumeration attacks.
+    // Users receive tokens via email only. Dashboard shows status without exposing tokens.
     const { data: applications, error } = await supabase
       .from('applications')
       .select(`
@@ -49,7 +50,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true, data: [] }, { status: 200 });
     }
 
-    // For each application, fetch report and simulation (without exposing tokens)
+    // For each application, fetch report and simulation
+    // Strip tokens from response to prevent unauthorized access
     const enriched = await Promise.all(
       applications.map(async (app) => {
         const { data: reports } = await supabase
@@ -66,8 +68,14 @@ export async function POST(request: NextRequest) {
           .order('submitted_at', { ascending: false })
           .limit(1);
 
+        // SECURITY: Strip tokens from response — users get tokens via email only
+        const { deal_room_token: _drt, report_token: _rt, ...safeApp } = app;
+
         return {
-          ...app,
+          ...safeApp,
+          // Provide boolean flags instead of raw tokens
+          has_deal_room: !!_drt,
+          has_report: !!_rt,
           report: reports?.[0] || null,
           simulation: sims?.[0] || null,
         };

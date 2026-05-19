@@ -5,6 +5,7 @@ import PillButton from '@/components/ui/PillButton';
 import Modal from '@/components/ui/Modal';
 import { assignCase } from '@/lib/cases';
 import type { DealCase } from '@/lib/cases';
+import { trackEvent, EVENTS } from '@/lib/analytics';
 
 const TOTAL_TIME = 45 * 60; // 45 minutes in seconds
 const AUTOSAVE_INTERVAL = 30000; // 30 seconds
@@ -319,6 +320,7 @@ export default function DealRoomPage() {
     await enterFullscreen();
     setProcterReady(true);
     setPhase('active');
+    trackEvent(EVENTS.DEALROOM_START);
     setTimeout(() => textAreaRef.current?.focus(), 200);
   };
 
@@ -397,6 +399,7 @@ export default function DealRoomPage() {
       try { document.exitFullscreen(); } catch {}
     }
     setPhase('submitted');
+    trackEvent(EVENTS.DEALROOM_SUBMIT, { word_count: wordCount });
     setSubmitting(false);
   }, [content, wordCount, timeLeft, applicationId, token, activeCase, tabViolations, webcamStream, pasteCount, largePasteCount, typingBursts]);
 
@@ -661,7 +664,7 @@ export default function DealRoomPage() {
             <strong style={{ color: '#fff' }}>{Math.round((TOTAL_TIME - timeLeft) / 60)} minutes</strong>.
           </p>
           <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.40)', marginTop: 24 }}>
-            Your FISS Score Report will be delivered to your email within 48 hours.
+            Your FISS Score Report will be delivered to your email — typically within a few hours.
           </p>
           <div style={{ marginTop: 32 }}>
             <PillButton variant="secondary" href="/">

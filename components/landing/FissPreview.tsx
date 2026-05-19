@@ -197,7 +197,7 @@ export default function FissPreview() {
         {/* Download button */}
         <div style={{ marginTop: 24 }}>
           <PillButton variant="primary" fullWidth href="/sample-report">
-            Download Sample Report
+            See Full Sample Report →
           </PillButton>
         </div>
       </div>

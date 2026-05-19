@@ -59,7 +59,7 @@ function welcomeHTML(data: { full_name: string; deal_room_url: string }) {
   <div style="margin:16px 0;padding:16px 20px;background:rgba(255,255,255,0.03);border-left:3px solid rgba(255,255,255,0.15);border-radius:0 8px 8px 0">
     <p style="${MUTED};margin:0 0 12px"><span style="${STRONG}">The timer starts the moment you click Begin</span> — not when you open the link. Take a minute to read the instructions first.</p>
     <p style="${MUTED};margin:0 0 12px"><span style="${STRONG}">You have 45 minutes once you start.</span> The case is a real company scenario — financials, market context, and a specific task. No multiple choice. No trick questions. Just how you think.</p>
-    <p style="${MUTED};margin:0"><span style="${STRONG}">Your FISS Score Report arrives within 48 hours</span> of submission. It will show your score across four dimensions with specific strengths, gaps, and what to work on — not a generic scorecard.</p>
+    <p style="${MUTED};margin:0"><span style="${STRONG}">Your FISS Score Report arrives the same day you submit</span> — typically within a few hours. It will show your score across four dimensions with specific strengths, gaps, and what to work on — not a generic scorecard.</p>
   </div>
 
   <p style="${MUTED}">This link is yours. It does not expire but the 45-minute timer only runs once you begin.</p>
@@ -177,8 +177,8 @@ function reportDeliveryHTML(data: {
 }
 
 /* ══════════════════════════════════════════════
-   EMAIL 3 — 48-HOUR DELAY ALERT
-   Sent if report cannot be delivered in 48h
+   EMAIL 3 — DELAY ALERT
+   Sent if report cannot be delivered same day
    ══════════════════════════════════════════════ */
 function delayAlertHTML(data: { full_name: string; eta?: string }) {
   const firstName = data.full_name.split(' ')[0];
@@ -187,7 +187,7 @@ function delayAlertHTML(data: { full_name: string; eta?: string }) {
 <div style="${WRAPPER}">
   <p style="${MUTED}">Hi ${firstName},</p>
 
-  <p style="${MUTED}">Your FISS Score Report is taking a little longer than our usual 48-hour window.</p>
+  <p style="${MUTED}">Your FISS Score Report is taking a little longer than our usual same-day delivery.</p>
 
   <p style="${MUTED}">Your report will reach you by <span style="${STRONG}">${eta}</span>. Not a delay — just making sure the evaluation is accurate before it reaches you.</p>
 

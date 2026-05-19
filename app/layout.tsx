@@ -41,6 +41,12 @@ export default function RootLayout({
       <head>
         <link rel="preconnect" href="https://api.fontshare.com" />
         <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+        {/* Plausible Analytics — GDPR-compliant, no cookies, no consent banner */}
+        <script
+          defer
+          data-domain="fin-apply-ai.vercel.app"
+          src="https://plausible.io/js/script.js"
+        />
       </head>
       <body suppressHydrationWarning>{children}</body>
     </html>

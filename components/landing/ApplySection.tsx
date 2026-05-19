@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import SectionHeading from '@/components/ui/SectionHeading';
 import PillButton from '@/components/ui/PillButton';
 import anime from 'animejs';
+import { trackEvent, EVENTS } from '@/lib/analytics';
 
 export default function ApplySection() {
   const router = useRouter();
@@ -61,6 +62,7 @@ export default function ApplySection() {
           localStorage.setItem('finapply_report_token', result.data.report_token);
         }
         setSubmitted(true);
+        trackEvent(EVENTS.REGISTER_COMPLETE, { role: formData.target_role });
 
         // Go straight to dashboard — full access, no approval needed
         router.push('/dashboard');
@@ -284,7 +286,10 @@ export default function ApplySection() {
             )}
 
             <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.30)', marginTop: 4 }}>
-              By registering, you agree to receive your FISS Report via email.
+              By registering, you agree to our{' '}
+              <a href="/terms" style={{ color: 'rgba(255,255,255,0.50)', textDecoration: 'underline' }}>Terms of Service</a>
+              {' '}and{' '}
+              <a href="/privacy" style={{ color: 'rgba(255,255,255,0.50)', textDecoration: 'underline' }}>Privacy Policy</a>.
             </p>
           </form>
         )}

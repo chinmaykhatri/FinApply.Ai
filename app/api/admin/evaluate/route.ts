@@ -74,12 +74,13 @@ export async function POST(request: NextRequest) {
       candidate_response: sim.content,
     });
 
-    // 5. Call Gemini 2.5 Flash (fast, reliable, high quality)
+    // 5. Call Gemini 2.5 Flash — temperature 0.1 for scoring consistency
+    // Low temperature ensures the same response gets near-identical scores across runs
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
     const model = genAI.getGenerativeModel({
       model: 'gemini-2.5-flash',
       generationConfig: {
-        temperature: 0.3,
+        temperature: 0.1,
         maxOutputTokens: 8192,
       },
     });
