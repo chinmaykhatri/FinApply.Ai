@@ -99,6 +99,7 @@ function reportDeliveryHTML(data: {
   dc_score: number; dc_grade: string;
   one_liner: string;
   report_url: string;
+  share_url?: string;
   loom_url?: string;
   feedback_url?: string;
 }) {
@@ -156,7 +157,15 @@ function reportDeliveryHTML(data: {
 
   <p style="font-size:15px;font-weight:600;color:#fff;margin:0 0 16px">WHAT TO DO WITH THIS SCORE:</p>
 
-  <p style="${MUTED}"><span style="${STRONG}">Share it with employers directly.</span> Paste your score and the report link into applications or send it alongside your CV. It tells employers something your resume cannot — how you perform under analytical pressure.</p>
+  ${data.share_url ? `
+  <div style="text-align:center;margin:0 0 24px;padding:20px;background:rgba(37,99,235,0.08);border:1px solid rgba(37,99,235,0.15);border-radius:12px">
+    <p style="font-size:11px;color:rgba(255,255,255,0.40);letter-spacing:2px;margin:0 0 8px">YOUR PUBLIC SCORE LINK</p>
+    <a href="${data.share_url}" style="color:#2563EB;font-size:14px;font-weight:500;text-decoration:none;word-break:break-all">${data.share_url}</a>
+    <p style="font-size:12px;color:rgba(255,255,255,0.35);margin:8px 0 0">Share this link directly with employers, on LinkedIn, or in your email signature.</p>
+  </div>
+  ` : ''}
+
+  <p style="${MUTED}"><span style="${STRONG}">Share it with employers directly.</span> Paste your public score link into applications or send it alongside your CV. It tells employers something your resume cannot — how you perform under analytical pressure.</p>
 
   <p style="${MUTED}"><span style="${STRONG}">Post it on LinkedIn.</span> Your score, your dimension breakdown, and one line about what you learned. Employers in finance follow this more than you think.</p>
 
@@ -285,6 +294,7 @@ export async function sendReportEmail(data: {
   dc_score: number; dc_grade: string;
   one_liner: string;
   report_url: string;
+  share_url?: string;
   loom_url?: string;
   feedback_url?: string;
 }) {

@@ -148,11 +148,35 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to save evaluation' }, { status: 500 });
     }
 
-    // 8. Update application status to scored
-    await supabase
-      .from('applications')
-      .update({ status: 'scored', updated_at: new Date().toISOString() })
-      .eq('id', application_id);
+    // 8. Generate public share_id for /score/[id] page
+    let shareId = '';
+    try {
+      const { generateShareId, addCollisionSuffix } = await import('@/lib/share');
+      shareId = generateShareId(app.full_name, evaluation.fiss_score, app.target_role);
+      
+      // Check collision
+      const { data: existing } = await supabase
+        .from('applications')
+        .select('id')
+        .eq('share_id', shareId)
+        .maybeSingle();
+      
+      if (existing) {
+        shareId = addCollisionSuffix(shareId);
+      }
+
+      await supabase
+        .from('applications')
+        .update({ status: 'scored', share_id: shareId, updated_at: new Date().toISOString() })
+        .eq('id', application_id);
+    } catch (shareErr) {
+      console.error('Share ID generation failed (non-blocking):', shareErr);
+      // Fallback: just update status without share_id
+      await supabase
+        .from('applications')
+        .update({ status: 'scored', updated_at: new Date().toISOString() })
+        .eq('id', application_id);
+    }
 
     // 9. Auto-email FISS report to candidate (non-blocking)
     try {
@@ -174,6 +198,7 @@ export async function POST(request: NextRequest) {
         dc_grade: evaluation.dc_grade,
         one_liner: evaluation.one_line_summary,
         report_url: `${appUrl}/report/${app.report_token}`,
+        share_url: shareId ? `${appUrl}/score/${shareId}` : undefined,
       });
 
       // Update status to report_sent since email was successful

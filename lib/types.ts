@@ -22,6 +22,7 @@ export interface Application {
   status: ApplicationStatus;
   deal_room_token: string | null;
   report_token: string | null;
+  share_id: string | null;
   created_at: string;
   updated_at: string;
 }

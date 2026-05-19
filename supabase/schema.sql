@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS applications (
     CHECK (status IN ('applied', 'dealroom_sent', 'submitted', 'scored', 'report_sent', 'rejected', 'eval_failed')),
   deal_room_token TEXT UNIQUE,
   report_token TEXT UNIQUE,
+  share_id TEXT UNIQUE,
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now()
 );
@@ -61,6 +62,7 @@ CREATE INDEX IF NOT EXISTS idx_applications_email ON applications(email);
 CREATE INDEX IF NOT EXISTS idx_applications_status ON applications(status);
 CREATE INDEX IF NOT EXISTS idx_applications_deal_room_token ON applications(deal_room_token);
 CREATE INDEX IF NOT EXISTS idx_applications_report_token ON applications(report_token);
+CREATE INDEX IF NOT EXISTS idx_applications_share_id ON applications(share_id);
 CREATE INDEX IF NOT EXISTS idx_simulations_application ON simulations(application_id);
 CREATE INDEX IF NOT EXISTS idx_fiss_reports_application ON fiss_reports(application_id);
 

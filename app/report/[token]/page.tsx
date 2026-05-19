@@ -19,6 +19,7 @@ export default function ReportPage() {
   const [candidateName, setCandidateName] = useState('');
   const [candidateCollege, setCandidateCollege] = useState('');
   const [appId, setAppId] = useState('');
+  const [shareId, setShareId] = useState<string | null>(null);
 
   // Feedback state
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
@@ -58,6 +59,16 @@ export default function ReportPage() {
             if (r.loom_url) setLoomUrl(r.loom_url);
             setPhase('ready');
             trackEvent(EVENTS.REPORT_VIEW);
+            // Fetch or generate share ID
+            try {
+              const shareRes = await fetch('/api/share/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ report_token: token }),
+              });
+              const shareJson = await shareRes.json();
+              if (shareJson.share_id) setShareId(shareJson.share_id);
+            } catch { /* non-blocking */ }
           } else {
             // Application exists but no report yet
             setPhase('no_report');
@@ -206,7 +217,7 @@ export default function ReportPage() {
         </div>
       </header>
 
-      {/* LinkedIn Share Preview Card */}
+      {/* Share Score Card */}
       <div style={{
         maxWidth: 800, margin: '0 auto', padding: '0 24px',
       }}>
@@ -223,26 +234,49 @@ export default function ReportPage() {
             </p>
             <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.60)', lineHeight: 1.5, margin: 0, maxWidth: 400 }}>
               Let your network know you scored <strong style={{ color: '#fff' }}>{report.total_score}/100</strong> on
-              the FISS — the industry's first simulation-based finance assessment.
+              the FISS — the industry&apos;s first simulation-based finance assessment.
             </p>
+            {shareId && (
+              <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', margin: '8px 0 0' }}>
+                Public score page: <a href={`/score/${shareId}`} style={{ color: '#2563EB', textDecoration: 'none' }}>
+                  finapply.ai/score/{shareId}
+                </a>
+              </p>
+            )}
           </div>
-          <a
-            href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(`https://finapply.ai`)}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              display: 'inline-flex', alignItems: 'center', gap: 8,
-              padding: '12px 24px', borderRadius: 100,
-              background: '#0A66C2', color: '#fff',
-              fontSize: 14, fontWeight: 600, textDecoration: 'none',
-              transition: 'all 200ms',
-            }}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
-            </svg>
-            Share on LinkedIn
-          </a>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            {shareId && (
+              <a
+                href={`/score/${shareId}`}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 6,
+                  padding: '10px 20px', borderRadius: 100,
+                  background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
+                  color: '#fff', fontSize: 13, fontWeight: 500, textDecoration: 'none',
+                  transition: 'all 200ms',
+                }}
+              >
+                View Public Score →
+              </a>
+            )}
+            <a
+              href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareId ? `https://fin-apply-ai.vercel.app/score/${shareId}` : `https://fin-apply-ai.vercel.app`)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 8,
+                padding: '10px 20px', borderRadius: 100,
+                background: '#0A66C2', color: '#fff',
+                fontSize: 13, fontWeight: 600, textDecoration: 'none',
+                transition: 'all 200ms',
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+              </svg>
+              Share on LinkedIn
+            </a>
+          </div>
         </div>
       </div>
 
