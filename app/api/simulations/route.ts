@@ -95,19 +95,48 @@ export async function POST(request: NextRequest) {
       .update({ status: 'submitted', updated_at: new Date().toISOString() })
       .eq('id', application_id);
 
-    // 3. Dispatch evaluation via Inngest (reliable, retried, observable)
-    await inngest.send({
-      name: 'app/submission.completed',
-      data: {
-        application_id,
-        simulation_id: sim.id,
-      },
-    });
+    // 3. Dispatch evaluation — try Inngest first, fallback to direct call
+    let evalDispatched = false;
+
+    // Inngest path (only if keys are configured)
+    if (process.env.INNGEST_EVENT_KEY) {
+      try {
+        await inngest.send({
+          name: 'app/submission.completed',
+          data: { application_id, simulation_id: sim.id },
+        });
+        evalDispatched = true;
+        console.log(`[SUBMIT] Evaluation dispatched via Inngest for app=${application_id}`);
+      } catch (inngestErr) {
+        console.warn('[SUBMIT] Inngest send failed, falling back to direct eval:', inngestErr);
+      }
+    }
+
+    // Direct fallback — call /api/admin/evaluate synchronously
+    if (!evalDispatched) {
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://finapply-ai-delta.vercel.app';
+      const internalSecret = process.env.ADMIN_API_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+
+      // Fire-and-forget: don't block the response on eval completion
+      fetch(`${baseUrl}/api/admin/evaluate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-internal-secret': internalSecret,
+        },
+        body: JSON.stringify({ application_id, simulation_id: sim.id }),
+      })
+        .then(res => console.log(`[SUBMIT] Direct eval response: ${res.status}`))
+        .catch(err => console.error('[SUBMIT] Direct eval failed:', err));
+
+      console.log(`[SUBMIT] Evaluation dispatched via direct fallback for app=${application_id}`);
+    }
 
     auditLog('admin.action', {
       action: 'simulation_submitted',
       application_id,
       simulation_id: sim.id,
+      dispatch_method: evalDispatched ? 'inngest' : 'direct',
     }, request);
 
     return NextResponse.json({ success: true, data: { id: sim.id } }, { status: 201 });
