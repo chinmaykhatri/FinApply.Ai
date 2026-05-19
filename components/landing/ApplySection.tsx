@@ -24,19 +24,62 @@ export default function ApplySection() {
   const btnRef = useRef<HTMLDivElement>(null);
 
   const [formError, setFormError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+
+  const validateField = (name: string, value: string): string => {
+    if (['full_name', 'college_or_firm', 'city'].includes(name) && !value.trim()) {
+      return 'This field is required';
+    }
+    if (name === 'email') {
+      if (!value.trim()) return 'Email is required';
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return 'Enter a valid email address';
+    }
+    if (name === 'current_status' && !value) return 'Please select your current status';
+    if (name === 'target_role' && !value) return 'Please select your target role';
+    return '';
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
     setFormError('');
+    // Clear field error on edit
+    if (touched[name]) {
+      const err = validateField(name, value);
+      setFieldErrors((prev) => ({ ...prev, [name]: err }));
+    }
+  };
+
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setTouched((prev) => ({ ...prev, [name]: true }));
+    const err = validateField(name, value);
+    setFieldErrors((prev) => ({ ...prev, [name]: err }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validate all fields
     const required = ['full_name', 'email', 'college_or_firm', 'city', 'current_status', 'target_role'];
-    if (required.some((k) => !formData[k as keyof typeof formData].trim())) {
-      setFormError('Please fill in all required fields.');
+    const errors: Record<string, string> = {};
+    let hasError = false;
+    for (const key of required) {
+      const err = validateField(key, formData[key as keyof typeof formData]);
+      if (err) {
+        errors[key] = err;
+        hasError = true;
+      }
+    }
+    setFieldErrors(errors);
+    setTouched(required.reduce((acc, k) => ({ ...acc, [k]: true }), {}));
+
+    if (hasError) {
+      setFormError('Please fix the highlighted fields below.');
       return;
     }
+
     setLoading(true);
     setFormError('');
 
@@ -65,7 +108,7 @@ export default function ApplySection() {
         trackEvent(EVENTS.REGISTER_COMPLETE, { role: formData.target_role });
 
         // Go straight to dashboard — full access, no approval needed
-        router.push('/dashboard');
+        setTimeout(() => router.push('/dashboard'), 2000);
       } else {
         setFormError(result.error || 'Registration failed. Please try again.');
         setLoading(false);
@@ -158,6 +201,9 @@ export default function ApplySection() {
     });
   }, [submitted]);
 
+  const fieldClass = (name: string) =>
+    `form-field apply-field${fieldErrors[name] && touched[name] ? ' field-error' : ''}`;
+
   return (
     <section id="apply" ref={sectionRef} style={{ background: '#000', padding: '120px 120px' }}>
       <div style={{ maxWidth: 520, margin: '0 auto', textAlign: 'center' }}>
@@ -204,21 +250,16 @@ export default function ApplySection() {
         {/* Form or Success */}
         {submitted ? (
           <div
-            className="apply-success"
-            style={{
-              marginTop: 40,
-              background: 'rgba(22,163,74,0.08)',
-              border: '1px solid rgba(22,163,74,0.20)',
-              borderRadius: 16,
-              padding: 40,
-              opacity: 0,
-            }}
+            className="apply-success form-success-card"
+            style={{ marginTop: 40, opacity: 0 }}
           >
             {/* SVG checkmark */}
-            <svg width="48" height="48" viewBox="0 0 48 48" fill="none" style={{ margin: '0 auto 16px' }}>
-              <circle cx="24" cy="24" r="22" stroke="#16A34A" strokeWidth="2" opacity="0.30" />
+            <svg width="56" height="56" viewBox="0 0 56 56" fill="none" style={{ margin: '0 auto 16px', display: 'block' }}>
+              <circle cx="28" cy="28" r="26" stroke="#16A34A" strokeWidth="2" opacity="0.30">
+                <animate attributeName="r" from="0" to="26" dur="0.4s" fill="freeze" />
+              </circle>
               <path
-                d="M15 24L21 30L33 18"
+                d="M18 28L24 34L38 20"
                 stroke="#16A34A"
                 strokeWidth="2.5"
                 strokeLinecap="round"
@@ -230,9 +271,12 @@ export default function ApplySection() {
                 }}
               />
             </svg>
-            <p style={{ fontSize: 24, fontWeight: 600, color: '#fff' }}>Registration complete!</p>
-            <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.60)', marginTop: 12 }}>
-              Your Deal Room and FISS Report are now ready. Redirecting you...
+            <p style={{ fontSize: 24, fontWeight: 600, color: '#fff', margin: '0 0 8px' }}>You&apos;re in!</p>
+            <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.60)', margin: '0 0 12px' }}>
+              Your Deal Room and FISS Report are now ready.
+            </p>
+            <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.30)', margin: 0 }}>
+              Redirecting to your dashboard...
             </p>
           </div>
         ) : (
@@ -240,29 +284,59 @@ export default function ApplySection() {
             id="apply-form"
             onSubmit={handleSubmit}
             style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 40 }}
+            noValidate
           >
-            <input name="full_name" className="form-field apply-field" placeholder="Full Name" value={formData.full_name} onChange={handleChange} required style={{ opacity: 0 }} />
-            <input name="email" type="email" className="form-field apply-field" placeholder="Email Address" value={formData.email} onChange={handleChange} required style={{ opacity: 0 }} />
+            {/* Full Name */}
+            <div>
+              <input name="full_name" className={fieldClass('full_name')} placeholder="Full Name" value={formData.full_name} onChange={handleChange} onBlur={handleBlur} required style={{ opacity: 0 }} />
+              {fieldErrors.full_name && touched.full_name && <p className="field-error-text">{fieldErrors.full_name}</p>}
+            </div>
+
+            {/* Email */}
+            <div>
+              <input name="email" type="email" className={fieldClass('email')} placeholder="Email Address" value={formData.email} onChange={handleChange} onBlur={handleBlur} required style={{ opacity: 0 }} />
+              {fieldErrors.email && touched.email && <p className="field-error-text">{fieldErrors.email}</p>}
+            </div>
+
+            {/* LinkedIn (optional) */}
             <input name="linkedin_url" type="url" className="form-field apply-field" placeholder="LinkedIn Profile URL (e.g. linkedin.com/in/yourname)" value={formData.linkedin_url} onChange={handleChange} style={{ opacity: 0 }} />
-            <input name="college_or_firm" className="form-field apply-field" placeholder="College or Current Firm" value={formData.college_or_firm} onChange={handleChange} required style={{ opacity: 0 }} />
-            <input name="city" className="form-field apply-field" placeholder="City" value={formData.city} onChange={handleChange} required style={{ opacity: 0 }} />
 
-            <select name="current_status" className="form-field form-select apply-field" value={formData.current_status} onChange={handleChange} required style={{ opacity: 0 }}>
-              <option value="" disabled>I am currently a...</option>
-              <option value="final_year_student">Final year student</option>
-              <option value="mba_student">MBA student</option>
-              <option value="working_0_2">Working professional (0-2 years)</option>
-              <option value="working_2_plus">Working professional (2+ years)</option>
-            </select>
+            {/* College */}
+            <div>
+              <input name="college_or_firm" className={fieldClass('college_or_firm')} placeholder="College or Current Firm" value={formData.college_or_firm} onChange={handleChange} onBlur={handleBlur} required style={{ opacity: 0 }} />
+              {fieldErrors.college_or_firm && touched.college_or_firm && <p className="field-error-text">{fieldErrors.college_or_firm}</p>}
+            </div>
 
-            <select name="target_role" className="form-field form-select apply-field" value={formData.target_role} onChange={handleChange} required style={{ opacity: 0 }}>
-              <option value="" disabled>Target Role</option>
-              <option value="ib_analyst">Investment Banking Analyst</option>
-              <option value="pe_analyst">Private Equity Analyst</option>
-              <option value="big4_advisory">Big 4 Advisory</option>
-              <option value="equity_research">Equity Research</option>
-              <option value="corporate_finance">Corporate Finance</option>
-            </select>
+            {/* City */}
+            <div>
+              <input name="city" className={fieldClass('city')} placeholder="City" value={formData.city} onChange={handleChange} onBlur={handleBlur} required style={{ opacity: 0 }} />
+              {fieldErrors.city && touched.city && <p className="field-error-text">{fieldErrors.city}</p>}
+            </div>
+
+            {/* Current Status */}
+            <div>
+              <select name="current_status" className={`form-select ${fieldClass('current_status')}`} value={formData.current_status} onChange={handleChange} onBlur={handleBlur} required style={{ opacity: 0 }}>
+                <option value="" disabled>I am currently a...</option>
+                <option value="final_year_student">Final year student</option>
+                <option value="mba_student">MBA student</option>
+                <option value="working_0_2">Working professional (0-2 years)</option>
+                <option value="working_2_plus">Working professional (2+ years)</option>
+              </select>
+              {fieldErrors.current_status && touched.current_status && <p className="field-error-text">{fieldErrors.current_status}</p>}
+            </div>
+
+            {/* Target Role */}
+            <div>
+              <select name="target_role" className={`form-select ${fieldClass('target_role')}`} value={formData.target_role} onChange={handleChange} onBlur={handleBlur} required style={{ opacity: 0 }}>
+                <option value="" disabled>Target Role</option>
+                <option value="ib_analyst">Investment Banking Analyst</option>
+                <option value="pe_analyst">Private Equity Analyst</option>
+                <option value="big4_advisory">Big 4 Advisory</option>
+                <option value="equity_research">Equity Research</option>
+                <option value="corporate_finance">Corporate Finance</option>
+              </select>
+              {fieldErrors.target_role && touched.target_role && <p className="field-error-text">{fieldErrors.target_role}</p>}
+            </div>
 
             <div
               ref={btnRef}
@@ -275,12 +349,7 @@ export default function ApplySection() {
             </div>
 
             {formError && (
-              <p style={{
-                fontSize: 13, color: '#DC2626', marginTop: 8,
-                padding: '10px 16px', borderRadius: 10,
-                background: 'rgba(220,38,38,0.08)',
-                border: '1px solid rgba(220,38,38,0.20)',
-              }}>
+              <p className="form-error-banner">
                 {formError}
               </p>
             )}

@@ -197,6 +197,58 @@ export default function AboutPage() {
         </div>
       </section>
 
+      {/* ═══════════════════════════════════════
+          SECTION 5 — CTA
+          ═══════════════════════════════════════ */}
+      <section className="about-section-cta">
+        {/* Glow */}
+        <div style={{
+          position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+          width: 600, height: 600, borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(37,99,235,0.08) 0%, transparent 60%)',
+          pointerEvents: 'none',
+        }} />
+
+        <div style={{ position: 'relative', zIndex: 2, maxWidth: 600, margin: '0 auto', textAlign: 'center' }}>
+          <p className="about-label">TAKE THE NEXT STEP</p>
+
+          <h2 className="about-heading-cta">
+            Ready to prove yourself?
+          </h2>
+
+          <p style={{
+            fontSize: 16, color: 'rgba(255,255,255,0.55)', lineHeight: 1.8,
+            margin: '24px auto 40px', maxWidth: 520,
+          }}>
+            One simulation. Four dimensions. A verified FISS Score that speaks for your analytical ability — to every employer, on every application.
+          </p>
+
+          {/* Stats row */}
+          <div className="about-cta-stats">
+            {[
+              { value: '45', unit: 'min', label: 'Timed simulation' },
+              { value: '4', unit: '', label: 'Analytical dimensions' },
+              { value: '1', unit: '', label: 'Verified score' },
+            ].map((s) => (
+              <div key={s.label} className="about-cta-stat">
+                <span className="about-cta-stat-value">{s.value}<span className="about-cta-stat-unit">{s.unit}</span></span>
+                <span className="about-cta-stat-label">{s.label}</span>
+              </div>
+            ))}
+          </div>
+
+          <div style={{ marginTop: 40 }}>
+            <PillButton variant="primary" large href="/#apply">
+              Get Your FISS Score — Free →
+            </PillButton>
+          </div>
+
+          <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.25)', marginTop: 16 }}>
+            No cost. No waitlist. Results in hours.
+          </p>
+        </div>
+      </section>
+
       <Footer />
 
       {/* ═══════════════════════════════════════
@@ -399,12 +451,62 @@ export default function AboutPage() {
           color: rgba(255, 255, 255, 0.80) !important;
         }
 
+        /* ─── Section 5: CTA ─── */
+        .about-section-cta {
+          background: #000;
+          border-top: 1px solid rgba(37, 99, 235, 0.08);
+          padding: 100px 120px;
+          position: relative;
+          overflow: hidden;
+        }
+        .about-heading-cta {
+          font-size: 44px;
+          font-weight: 600;
+          line-height: 1.15;
+          max-width: 480px;
+          margin: 0 auto;
+          background: linear-gradient(144.5deg, #FFFFFF 28%, rgba(0,0,0,0) 115%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+        }
+        .about-cta-stats {
+          display: flex;
+          justify-content: center;
+          gap: 48px;
+        }
+        .about-cta-stat {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 4px;
+        }
+        .about-cta-stat-value {
+          font-size: 40px;
+          font-weight: 700;
+          color: #fff;
+          font-family: monospace;
+          line-height: 1;
+        }
+        .about-cta-stat-unit {
+          font-size: 18px;
+          font-weight: 400;
+          color: rgba(255, 255, 255, 0.40);
+          margin-left: 2px;
+        }
+        .about-cta-stat-label {
+          font-size: 12px;
+          color: rgba(255, 255, 255, 0.35);
+          letter-spacing: 0.5px;
+        }
+
         /* ─── Responsive ─── */
         @media (max-width: 1024px) {
           .about-section-1 { padding: 140px 60px 80px; }
           .about-section-2 { padding: 60px 60px; }
           .about-section-3 { padding: 80px 60px; }
           .about-section-4 { padding: 60px 60px; }
+          .about-section-cta { padding: 80px 60px; }
         }
         @media (max-width: 768px) {
           .about-section-1 { padding: 120px 40px 60px; }
@@ -425,6 +527,10 @@ export default function AboutPage() {
           .about-section-4 { padding: 48px 40px; }
           .about-heading-4 { font-size: 26px; }
           .about-pullquote { font-size: 16px; padding: 20px 22px; }
+          .about-section-cta { padding: 60px 40px; }
+          .about-heading-cta { font-size: 32px; }
+          .about-cta-stats { gap: 24px; }
+          .about-cta-stat-value { font-size: 32px; }
         }
       `}</style>
     </main>

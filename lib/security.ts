@@ -163,7 +163,9 @@ export type AuditEvent =
   | 'api.suspicious'
   | 'admin.action'
   | 'webhook.received'
-  | 'webhook.invalid';
+  | 'webhook.invalid'
+  | 'employer.application_received'
+  | 'employer.application_insert_error';
 
 export function auditLog(
   event: AuditEvent,

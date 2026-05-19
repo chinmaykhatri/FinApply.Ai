@@ -99,6 +99,7 @@ function reportDeliveryHTML(data: {
   dc_score: number; dc_grade: string;
   one_liner: string;
   report_url: string;
+  dashboard_url?: string;
   share_url?: string;
   loom_url?: string;
   feedback_url?: string;
@@ -138,6 +139,13 @@ function reportDeliveryHTML(data: {
   <div style="text-align:center;margin:24px 0">
     <a href="${data.report_url}" style="${LINK_BTN}">VIEW FULL REPORT →</a>
   </div>
+
+  ${data.dashboard_url ? `
+  <div style="text-align:center;margin:0 0 24px;padding:16px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px">
+    <p style="font-size:12px;color:rgba(255,255,255,0.35);margin:0 0 6px">Bookmark your personal dashboard — no login needed</p>
+    <a href="${data.dashboard_url}" style="color:#2563EB;font-size:13px;font-weight:500;text-decoration:none">View your score anytime →</a>
+  </div>
+  ` : ''}
 
   ${loomBlock}
 
@@ -294,6 +302,7 @@ export async function sendReportEmail(data: {
   dc_score: number; dc_grade: string;
   one_liner: string;
   report_url: string;
+  dashboard_url?: string;
   share_url?: string;
   loom_url?: string;
   feedback_url?: string;

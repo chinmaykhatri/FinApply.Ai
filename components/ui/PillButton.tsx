@@ -35,7 +35,8 @@ export default function PillButton({
 
   const inner = (
     <span className={`pill-btn-inner`}>
-      {icon && <span style={{ display: 'inline-flex', flexShrink: 0 }}>{icon}</span>}
+      {loading && <span className="btn-spinner" />}
+      {icon && !loading && <span style={{ display: 'inline-flex', flexShrink: 0 }}>{icon}</span>}
       {loading ? 'Submitting...' : children}
     </span>
   );

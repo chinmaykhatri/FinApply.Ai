@@ -198,6 +198,7 @@ export async function POST(request: NextRequest) {
         dc_grade: evaluation.dc_grade,
         one_liner: evaluation.one_line_summary,
         report_url: `${appUrl}/report/${app.report_token}`,
+        dashboard_url: `${appUrl}/my-score?token=${app.report_token}`,
         share_url: shareId ? `${appUrl}/score/${shareId}` : undefined,
       });
 

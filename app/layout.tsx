@@ -31,6 +31,8 @@ export const metadata: Metadata = {
   },
 };
 
+import PageViewTracker from '@/components/PageViewTracker';
+
 export default function RootLayout({
   children,
 }: {
@@ -48,7 +50,10 @@ export default function RootLayout({
           src="https://plausible.io/js/script.js"
         />
       </head>
-      <body suppressHydrationWarning>{children}</body>
+      <body suppressHydrationWarning>
+        <PageViewTracker />
+        {children}
+      </body>
     </html>
   );
 }

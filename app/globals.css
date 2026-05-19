@@ -514,6 +514,113 @@ textarea.form-field {
   animation: spin 1s linear infinite;
 }
 
+/* ─── Inline Button Spinner ────────────────── */
+.btn-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(0,0,0,0.15);
+  border-top-color: #000;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+.btn-spinner-light {
+  border-color: rgba(255,255,255,0.20);
+  border-top-color: #fff;
+}
+
+/* ─── Form Select Dropdown ─────────────────── */
+.form-select {
+  width: 100%;
+  padding: 12px 16px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 10px;
+  color: #fff;
+  font-size: 14px;
+  font-family: inherit;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  cursor: pointer;
+  transition: border-color 200ms, background 200ms;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='7' viewBox='0 0 12 7'%3E%3Cpath d='M1 1l5 5 5-5' stroke='rgba(255,255,255,0.3)' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+}
+.form-select:focus {
+  outline: none;
+  border-color: rgba(37,99,235,0.50);
+  background-color: rgba(255,255,255,0.06);
+}
+.form-select option {
+  background: #111;
+  color: #fff;
+}
+.form-select option:disabled {
+  color: rgba(255,255,255,0.30);
+}
+
+/* ─── Form Field Error State ───────────────── */
+.form-field.field-error {
+  border-color: rgba(220,38,38,0.60) !important;
+  background: rgba(220,38,38,0.04) !important;
+}
+.form-field.field-error:focus {
+  border-color: rgba(220,38,38,0.80) !important;
+  background: rgba(220,38,38,0.06) !important;
+}
+.field-error-text {
+  font-size: 12px;
+  color: #DC2626;
+  margin: 4px 0 0;
+  padding-left: 2px;
+  animation: fadeIn 0.2s ease;
+}
+
+/* ─── Form Success States ──────────────────── */
+.form-success-card {
+  background: rgba(22,163,74,0.08);
+  border: 1px solid rgba(22,163,74,0.20);
+  border-radius: 16px;
+  padding: 40px;
+  text-align: center;
+  animation: successPop 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes successPop {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* ─── Animated Check Icon ──────────────────── */
+@keyframes drawLine {
+  to { stroke-dashoffset: 0; }
+}
+@keyframes circleGrow {
+  from { r: 0; opacity: 0; }
+  to { r: 22; opacity: 0.30; }
+}
+
+/* ─── Form Error Banner ────────────────────── */
+.form-error-banner {
+  font-size: 13px;
+  color: #DC2626;
+  padding: 10px 16px;
+  border-radius: 10px;
+  background: rgba(220,38,38,0.08);
+  border: 1px solid rgba(220,38,38,0.20);
+  animation: shakeX 0.4s ease;
+  text-align: left;
+}
+@keyframes shakeX {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+}
+
 /* ─── Modal Overlay ─────────────────────────── */
 .modal-overlay {
   position: fixed;

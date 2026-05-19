@@ -8,21 +8,60 @@ export default function EmployerSection() {
   const [company, setCompany] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [formError, setFormError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<{ email?: string; company?: string }>({});
+  const [touched, setTouched] = useState<{ email?: boolean; company?: boolean }>({});
+
+  const validateEmail = (val: string) => {
+    if (!val.trim()) return 'Work email is required';
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) return 'Enter a valid email address';
+    return '';
+  };
+
+  const validateCompany = (val: string) => {
+    if (!val.trim()) return 'Company name is required';
+    return '';
+  };
+
+  const handleBlur = (field: 'email' | 'company') => {
+    setTouched((prev) => ({ ...prev, [field]: true }));
+    if (field === 'email') {
+      setFieldErrors((prev) => ({ ...prev, email: validateEmail(email) }));
+    } else {
+      setFieldErrors((prev) => ({ ...prev, company: validateCompany(company) }));
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !company) return;
+
+    const emailErr = validateEmail(email);
+    const companyErr = validateCompany(company);
+    setFieldErrors({ email: emailErr, company: companyErr });
+    setTouched({ email: true, company: true });
+
+    if (emailErr || companyErr) {
+      setFormError('Please fix the highlighted fields.');
+      return;
+    }
+
     setLoading(true);
+    setFormError('');
     try {
-      await fetch('/api/employer-waitlist', {
+      const res = await fetch('/api/employer-waitlist', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, company }),
       });
+      if (!res.ok) {
+        setFormError('Something went wrong. Please try again.');
+        setLoading(false);
+        return;
+      }
       trackEvent(EVENTS.EMPLOYER_WAITLIST, { company });
       setSubmitted(true);
     } catch {
-      // silent
+      setFormError('Network error. Please check your connection.');
     } finally {
       setLoading(false);
     }
@@ -191,17 +230,30 @@ export default function EmployerSection() {
 
         {/* Waitlist form */}
         {submitted ? (
-          <div style={{
-            background: 'rgba(22,163,74,0.08)',
-            border: '1px solid rgba(22,163,74,0.20)',
-            borderRadius: 16, padding: 40, textAlign: 'center',
-          }}>
-            <div style={{ fontSize: 36, marginBottom: 12 }}>✅</div>
+          <div className="form-success-card">
+            <svg width="48" height="48" viewBox="0 0 48 48" fill="none" style={{ margin: '0 auto 12px', display: 'block' }}>
+              <circle cx="24" cy="24" r="22" stroke="#16A34A" strokeWidth="2" opacity="0.30" />
+              <path
+                d="M15 24L21 30L33 18"
+                stroke="#16A34A"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                style={{
+                  strokeDasharray: 40,
+                  strokeDashoffset: 40,
+                  animation: 'drawLine 0.6s ease 0.3s forwards',
+                }}
+              />
+            </svg>
             <h3 style={{ fontSize: 22, fontWeight: 600, color: '#fff', margin: '0 0 8px' }}>
               You&apos;re on the list
             </h3>
-            <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.50)', margin: 0 }}>
+            <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.50)', margin: '0 0 6px' }}>
               We&apos;ll reach out as soon as employer access opens for early partners.
+            </p>
+            <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', margin: 0 }}>
+              Submitted {new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
             </p>
           </div>
         ) : (
@@ -225,45 +277,56 @@ export default function EmployerSection() {
             <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)', margin: '0 0 24px', maxWidth: 480 }}>
               Be first to access scored candidate profiles and skip the resume pile. Free during the founding period.
             </p>
-            <form onSubmit={handleSubmit} style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-              <input
-                type="text"
-                placeholder="Company name"
-                value={company}
-                onChange={(e) => setCompany(e.target.value)}
-                required
-                style={{
-                  flex: 1, minWidth: 160,
-                  background: 'rgba(255,255,255,0.05)',
-                  border: '1px solid rgba(255,255,255,0.12)',
-                  borderRadius: 10, padding: '12px 16px',
-                  color: '#fff', fontSize: 14, outline: 'none',
-                  transition: 'border-color 200ms ease',
-                }}
-                onFocus={(e) => { e.currentTarget.style.borderColor = 'rgba(139,92,246,0.40)'; }}
-                onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }}
-              />
-              <input
-                type="email"
-                placeholder="Work email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                style={{
-                  flex: 1, minWidth: 200,
-                  background: 'rgba(255,255,255,0.05)',
-                  border: '1px solid rgba(255,255,255,0.12)',
-                  borderRadius: 10, padding: '12px 16px',
-                  color: '#fff', fontSize: 14, outline: 'none',
-                  transition: 'border-color 200ms ease',
-                }}
-                onFocus={(e) => { e.currentTarget.style.borderColor = 'rgba(139,92,246,0.40)'; }}
-                onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }}
-              />
+            <form onSubmit={handleSubmit} style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }} noValidate>
+              <div style={{ flex: 1, minWidth: 160 }}>
+                <input
+                  type="text"
+                  placeholder="Company name"
+                  value={company}
+                  onChange={(e) => { setCompany(e.target.value); setFormError(''); if (touched.company) setFieldErrors((p) => ({ ...p, company: validateCompany(e.target.value) })); }}
+                  onBlur={() => handleBlur('company')}
+                  required
+                  style={{
+                    width: '100%',
+                    background: 'rgba(255,255,255,0.05)',
+                    border: `1px solid ${fieldErrors.company && touched.company ? 'rgba(220,38,38,0.60)' : 'rgba(255,255,255,0.12)'}`,
+                    borderRadius: 10, padding: '12px 16px',
+                    color: '#fff', fontSize: 14, outline: 'none',
+                    transition: 'border-color 200ms ease',
+                  }}
+                  onFocus={(e) => { if (!fieldErrors.company) e.currentTarget.style.borderColor = 'rgba(139,92,246,0.40)'; }}
+                />
+                {fieldErrors.company && touched.company && <p className="field-error-text">{fieldErrors.company}</p>}
+              </div>
+              <div style={{ flex: 1, minWidth: 200 }}>
+                <input
+                  type="email"
+                  placeholder="Work email"
+                  value={email}
+                  onChange={(e) => { setEmail(e.target.value); setFormError(''); if (touched.email) setFieldErrors((p) => ({ ...p, email: validateEmail(e.target.value) })); }}
+                  onBlur={() => handleBlur('email')}
+                  required
+                  style={{
+                    width: '100%',
+                    background: 'rgba(255,255,255,0.05)',
+                    border: `1px solid ${fieldErrors.email && touched.email ? 'rgba(220,38,38,0.60)' : 'rgba(255,255,255,0.12)'}`,
+                    borderRadius: 10, padding: '12px 16px',
+                    color: '#fff', fontSize: 14, outline: 'none',
+                    transition: 'border-color 200ms ease',
+                  }}
+                  onFocus={(e) => { if (!fieldErrors.email) e.currentTarget.style.borderColor = 'rgba(139,92,246,0.40)'; }}
+                />
+                {fieldErrors.email && touched.email && <p className="field-error-text">{fieldErrors.email}</p>}
+              </div>
               <PillButton variant="primary" type="submit" loading={loading}>
                 Get Early Access →
               </PillButton>
             </form>
+            {formError && (
+              <p className="form-error-banner" style={{ marginTop: 12 }}>
+                {formError}
+              </p>
+            )}
           </div>
         )}
       </div>
