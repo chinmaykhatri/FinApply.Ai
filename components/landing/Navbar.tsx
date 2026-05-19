@@ -65,7 +65,7 @@ export default function Navbar() {
   const pageLinks = [
     { label: 'Deal Room', href: '/dealroom-explained' },
     { label: 'FISS Score', href: '/fiss-score' },
-    { label: 'Pricing', href: '/pricing' },
+    { label: 'Employers', href: '/pricing' },
     { label: 'About', href: '/about' },
     { label: 'Founders', href: '/founders' },
   ];

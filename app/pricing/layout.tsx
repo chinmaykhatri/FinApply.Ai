@@ -1,13 +1,13 @@
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Employer Pricing — FinApply.ai',
+  title: 'For Employers — FinApply.ai',
   description:
-    'Simple pricing with measurable ROI. Every plan starts with a free 90-day research pilot. No credit card required.',
+    'Join FinApply as a founding employer partner. 5 spots available. Free 90-day research pilot with full access to FISS Score profiles.',
   openGraph: {
-    title: 'Employer Pricing — FinApply.ai',
+    title: 'For Employers — FinApply.ai',
     description:
-      'Simple pricing with measurable ROI. Access pre-scored finance candidates through verified FISS Score assessments.',
+      'Founding Employer Cohort — 5 spots available. Free 90-day pilot with assessed candidates for your open roles.',
   },
 };
 
