@@ -72,11 +72,11 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // 4. Trigger evaluation directly
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://finapply-ai-delta.vercel.app';
+    // 4. Trigger evaluation directly — use request origin so it works in any environment
+    const baseUrl = request.nextUrl.origin;
     const internalSecret = process.env.ADMIN_API_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
-    console.log(`[RETRY-EVAL] Triggering eval for app=${app.id}, sim=${sim.id}, email=${email}`);
+    console.log(`[RETRY-EVAL] Triggering eval for app=${app.id}, sim=${sim.id}, email=${email}, baseUrl=${baseUrl}`);
 
     const evalRes = await fetch(`${baseUrl}/api/admin/evaluate`, {
       method: 'POST',
