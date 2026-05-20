@@ -1,4 +1,5 @@
 import { inngest } from './client';
+import { runEvaluationPipeline } from '@/lib/evaluation/engine';
 import { createAdminClient } from '@/lib/supabase/admin';
 
 /* ══════════════════════════════════════════════
@@ -21,42 +22,24 @@ export const evaluateSubmission = inngest.createFunction(
   async ({ event }) => {
     const { application_id, simulation_id } = event.data;
 
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://finapply-ai-delta.vercel.app';
-    const internalSecret = process.env.ADMIN_API_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-
-    if (!internalSecret) {
-      throw new Error('[EVAL] Neither ADMIN_API_SECRET nor SUPABASE_SERVICE_ROLE_KEY is set.');
-    }
-
     console.log(`[INNGEST] Evaluating app=${application_id}, sim=${simulation_id}`);
 
-    const evalRes = await fetch(`${baseUrl}/api/admin/evaluate`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-internal-secret': internalSecret,
-      },
-      body: JSON.stringify({ application_id, simulation_id }),
-    });
+    // Use the shared evaluation engine directly — no HTTP roundtrip needed
+    const result = await runEvaluationPipeline(application_id, simulation_id);
 
-    if (!evalRes.ok) {
-      const errBody = await evalRes.text().catch(() => 'no body');
+    if (!result.success) {
+      console.error(`[INNGEST] Evaluation failed: ${result.error}`);
 
-      // Don't retry on auth errors — they won't resolve themselves
-      if (evalRes.status === 401 || evalRes.status === 403 || evalRes.status === 404) {
-        console.error(`[INNGEST] Auth failure (${evalRes.status}). Marking eval_failed.`);
+      // Mark as eval_failed for permanent/non-retryable errors
+      if (result.error === 'Simulation not found' || result.error === 'Application not found') {
         await markEvalFailed(application_id);
-        // Return instead of throw to prevent retry on permanent failures
-        return { success: false, reason: `Auth failure: ${evalRes.status}` };
+        return { success: false, reason: result.error };
       }
 
-      // Throw to trigger Inngest retry for transient errors
-      throw new Error(
-        `Evaluation failed: HTTP ${evalRes.status} — ${errBody.slice(0, 300)}`
-      );
+      // Throw to trigger Inngest retry for transient errors (AI failure, DB timeout, etc.)
+      throw new Error(`Evaluation failed: ${result.error}`);
     }
 
-    const result = await evalRes.json();
     console.log(`[INNGEST] Evaluation succeeded for app=${application_id}`);
     return { success: true, data: result };
   }

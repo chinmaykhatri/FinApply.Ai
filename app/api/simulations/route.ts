@@ -2,6 +2,10 @@ import { NextResponse, NextRequest } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { applyRateLimit, sanitizeString, auditLog } from '@/lib/security';
 import { inngest } from '@/lib/inngest/client';
+import { runEvaluationPipeline } from '@/lib/evaluation/engine';
+
+// Allow up to 60s for inline evaluation (Gemini + PDF + email)
+export const maxDuration = 60;
 
 /* POST /api/simulations — Submit deal room work + auto-evaluate */
 export async function POST(request: NextRequest) {
@@ -95,7 +99,7 @@ export async function POST(request: NextRequest) {
       .update({ status: 'submitted', updated_at: new Date().toISOString() })
       .eq('id', application_id);
 
-    // 3. Dispatch evaluation — try Inngest first, fallback to direct call
+    // 3. Dispatch evaluation — try Inngest first, fallback to INLINE evaluation
     let evalDispatched = false;
 
     // Inngest path (only if keys are configured)
@@ -108,35 +112,42 @@ export async function POST(request: NextRequest) {
         evalDispatched = true;
         console.log(`[SUBMIT] Evaluation dispatched via Inngest for app=${application_id}`);
       } catch (inngestErr) {
-        console.warn('[SUBMIT] Inngest send failed, falling back to direct eval:', inngestErr);
+        console.warn('[SUBMIT] Inngest send failed, falling back to inline eval:', inngestErr);
       }
     }
 
-    // Direct fallback — call /api/admin/evaluate synchronously
+    // INLINE fallback — run evaluation directly in this request context
+    // This ensures the evaluation completes before the serverless function terminates.
+    // The previous fire-and-forget fetch was being killed on Vercel when the parent
+    // function returned, causing evaluations to never complete.
     if (!evalDispatched) {
-      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://finapply-ai-delta.vercel.app';
-      const internalSecret = process.env.ADMIN_API_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-
-      // Fire-and-forget: don't block the response on eval completion
-      fetch(`${baseUrl}/api/admin/evaluate`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-internal-secret': internalSecret,
-        },
-        body: JSON.stringify({ application_id, simulation_id: sim.id }),
-      })
-        .then(res => console.log(`[SUBMIT] Direct eval response: ${res.status}`))
-        .catch(err => console.error('[SUBMIT] Direct eval failed:', err));
-
-      console.log(`[SUBMIT] Evaluation dispatched via direct fallback for app=${application_id}`);
+      console.log(`[SUBMIT] Running inline evaluation for app=${application_id}, sim=${sim.id}`);
+      try {
+        const evalResult = await runEvaluationPipeline(application_id, sim.id);
+        if (evalResult.success) {
+          console.log(`[SUBMIT] Inline evaluation succeeded for app=${application_id}`);
+        } else {
+          console.error(`[SUBMIT] Inline evaluation failed: ${evalResult.error}`);
+          // Mark as eval_failed so dashboard shows the right status
+          await supabase
+            .from('applications')
+            .update({ status: 'eval_failed', updated_at: new Date().toISOString() })
+            .eq('id', application_id);
+        }
+      } catch (evalErr) {
+        console.error('[SUBMIT] Inline evaluation threw:', evalErr);
+        await supabase
+          .from('applications')
+          .update({ status: 'eval_failed', updated_at: new Date().toISOString() })
+          .eq('id', application_id);
+      }
     }
 
     auditLog('admin.action', {
       action: 'simulation_submitted',
       application_id,
       simulation_id: sim.id,
-      dispatch_method: evalDispatched ? 'inngest' : 'direct',
+      dispatch_method: evalDispatched ? 'inngest' : 'inline',
     }, request);
 
     return NextResponse.json({ success: true, data: { id: sim.id } }, { status: 201 });

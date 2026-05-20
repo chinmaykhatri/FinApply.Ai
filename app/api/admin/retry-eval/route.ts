@@ -1,13 +1,17 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { verifyInternalAuth, auditLog } from '@/lib/security';
+import { runEvaluationPipeline } from '@/lib/evaluation/engine';
+
+// Allow up to 60s for AI evaluation pipeline
+export const maxDuration = 60;
 
 /* ══════════════════════════════════════════════
    POST /api/admin/retry-eval
    
    Manually retry evaluation for a stuck submission.
    Finds the latest simulation for the given email
-   and triggers /api/admin/evaluate.
+   and triggers evaluation directly via the shared engine.
 
    Auth: x-internal-secret header required.
    Body: { email: string }
@@ -72,46 +76,30 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // 4. Trigger evaluation directly — use request origin so it works in any environment
-    const baseUrl = request.nextUrl.origin;
-    const internalSecret = process.env.ADMIN_API_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+    // 4. Run evaluation directly via shared engine — no HTTP roundtrip
+    console.log(`[RETRY-EVAL] Running eval for app=${app.id}, sim=${sim.id}, email=${email}`);
 
-    console.log(`[RETRY-EVAL] Triggering eval for app=${app.id}, sim=${sim.id}, email=${email}, baseUrl=${baseUrl}`);
-
-    const evalRes = await fetch(`${baseUrl}/api/admin/evaluate`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-internal-secret': internalSecret,
-      },
-      body: JSON.stringify({
-        application_id: app.id,
-        simulation_id: sim.id,
-      }),
-    });
-
-    const evalBody = await evalRes.json().catch(() => ({}));
+    const result = await runEvaluationPipeline(app.id, sim.id);
 
     auditLog('admin.action', {
       action: 'manual_retry_eval',
       email,
       application_id: app.id,
       simulation_id: sim.id,
-      eval_status: evalRes.status,
+      eval_success: result.success,
     }, request);
 
-    if (!evalRes.ok) {
+    if (!result.success) {
       return NextResponse.json({
         error: 'Evaluation failed',
-        status: evalRes.status,
-        details: evalBody,
+        details: result.error,
       }, { status: 502 });
     }
 
     return NextResponse.json({
       success: true,
       message: `Evaluation completed for ${app.full_name}`,
-      data: evalBody,
+      data: result,
     });
   } catch (err) {
     console.error('[RETRY-EVAL] Error:', err);
