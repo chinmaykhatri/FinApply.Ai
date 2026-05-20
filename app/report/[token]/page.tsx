@@ -18,8 +18,12 @@ export default function ReportPage() {
   const [report, setReport] = useState<ReportData | null>(null);
   const [candidateName, setCandidateName] = useState('');
   const [candidateCollege, setCandidateCollege] = useState('');
+  const [targetRole, setTargetRole] = useState('');
   const [appId, setAppId] = useState('');
   const [shareId, setShareId] = useState<string | null>(null);
+  const [employerSummary, setEmployerSummary] = useState<string | null>(null);
+  const [linkedInCopied, setLinkedInCopied] = useState(false);
+  const [badgeCopied, setBadgeCopied] = useState(false);
 
   // Feedback state
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
@@ -41,6 +45,8 @@ export default function ReportPage() {
           setCandidateName(app.full_name);
           setAppId(app.id);
           setCandidateCollege(app.college_or_firm);
+          setTargetRole(app.target_role || '');
+          if (app.share_id) setShareId(app.share_id);
 
           // Only display real report data — no fake fallbacks
           if (app.fiss_reports && app.fiss_reports.length > 0) {
@@ -55,7 +61,9 @@ export default function ReportPage() {
               standout_strength: r.standout_strength || '',
               critical_gap: r.critical_gap || '',
               evaluator_summary: r.evaluator_summary || '',
+              employer_summary: r.employer_summary || undefined,
             });
+            if (r.employer_summary) setEmployerSummary(r.employer_summary);
             if (r.loom_url) setLoomUrl(r.loom_url);
             setPhase('ready');
             trackEvent(EVENTS.REPORT_VIEW);
@@ -326,6 +334,19 @@ export default function ReportPage() {
             {report.percentile}
           </p>
 
+          {/* Percentile Rank Indicator */}
+          <div style={{
+            display: 'inline-flex', alignItems: 'center', gap: 8,
+            background: 'rgba(37,99,235,0.08)', border: '1px solid rgba(37,99,235,0.15)',
+            borderRadius: 100, padding: '6px 16px', marginBottom: 16,
+          }}>
+            <span style={{ fontSize: 11, color: '#2563EB', fontWeight: 600, letterSpacing: 1 }}>COHORT PERCENTILE</span>
+            <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.50)' }}>·</span>
+            <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.40)', fontStyle: 'italic' }}>
+              Available after Batch 1 completion (25+ candidates)
+            </span>
+          </div>
+
           {/* Candidate */}
           <h1
             style={{
@@ -340,6 +361,35 @@ export default function ReportPage() {
           <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.40)', marginTop: 4 }}>
             {candidateCollege} · Founding Cohort · Batch 1
           </p>
+
+          {/* Live Score Link */}
+          {shareId && (
+            <div style={{
+              marginTop: 12, display: 'inline-flex', alignItems: 'center', gap: 8,
+              background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
+              borderRadius: 8, padding: '8px 16px',
+            }}>
+              <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)' }}>LIVE SCORE:</span>
+              <a
+                href={`/score/${shareId}`}
+                style={{ fontSize: 13, color: '#2563EB', textDecoration: 'none', fontWeight: 500 }}
+              >
+                finapply.ai/score/{shareId}
+              </a>
+              <button
+                onClick={async () => {
+                  await navigator.clipboard.writeText(`${window.location.origin}/score/${shareId}`);
+                  alert('Score link copied!');
+                }}
+                style={{
+                  fontSize: 11, background: 'none', border: 'none',
+                  color: 'rgba(255,255,255,0.40)', cursor: 'pointer',
+                }}
+              >
+                📋
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Divider */}
@@ -482,6 +532,194 @@ export default function ReportPage() {
           <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.70)', lineHeight: 1.6 }}>
             {report.critical_gap}
           </p>
+        </div>
+
+        {/* ── FOR EMPLOYERS ── */}
+        <div
+          style={{
+            marginTop: 48,
+            background: 'linear-gradient(135deg, rgba(37,99,235,0.04), rgba(139,92,246,0.04))',
+            border: '1px solid rgba(37,99,235,0.12)',
+            borderRadius: 16,
+            padding: 28,
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+            <span style={{
+              fontSize: 11, fontWeight: 600, color: '#2563EB',
+              letterSpacing: 2, textTransform: 'uppercase',
+            }}>
+              FOR EMPLOYERS
+            </span>
+            <span style={{
+              fontSize: 10, color: 'rgba(255,255,255,0.30)',
+              background: 'rgba(255,255,255,0.04)', borderRadius: 4,
+              padding: '2px 8px',
+            }}>
+              EXECUTIVE SUMMARY
+            </span>
+          </div>
+          <p style={{
+            fontSize: 15, color: 'rgba(255,255,255,0.75)', lineHeight: 1.7, margin: 0,
+          }}>
+            {employerSummary || `This candidate completed FinApply's FISS Deal Room — a 45-minute timed case simulation that evaluates Financial Reasoning, Structured Thinking, Risk Identification, and Decision Clarity under realistic deal conditions. Their total FISS Score of ${report.total_score}/100 reflects live analytical performance, not self-reported skills or interview coaching. Contact FinApply for detailed evaluation data.`}
+          </p>
+          <div style={{ marginTop: 16, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+            {shareId && (
+              <a
+                href={`/score/${shareId}`}
+                style={{
+                  fontSize: 12, fontWeight: 500, color: '#2563EB',
+                  textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4,
+                }}
+              >
+                View verified score →
+              </a>
+            )}
+            <a
+              href="mailto:team@finapply.ai?subject=Candidate%20Inquiry"
+              style={{
+                fontSize: 12, fontWeight: 500, color: 'rgba(255,255,255,0.40)',
+                textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4,
+              }}
+            >
+              Contact FinApply →
+            </a>
+          </div>
+        </div>
+
+        {/* ── LINKEDIN SHARING HEADLINE ── */}
+        <div
+          style={{
+            marginTop: 24,
+            background: 'rgba(10,102,194,0.06)',
+            border: '1px solid rgba(10,102,194,0.12)',
+            borderRadius: 16,
+            padding: 24,
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="#0A66C2">
+              <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+            </svg>
+            <span style={{ fontSize: 11, fontWeight: 600, color: '#0A66C2', letterSpacing: 2 }}>
+              LINKEDIN POST — READY TO SHARE
+            </span>
+          </div>
+          <div style={{
+            background: 'rgba(0,0,0,0.3)', borderRadius: 10, padding: 16,
+            fontSize: 13, color: 'rgba(255,255,255,0.60)', lineHeight: 1.7,
+            fontFamily: 'monospace', whiteSpace: 'pre-wrap',
+          }}>
+{`I just received my FISS Score from @FinApply — a 45-minute finance deal simulation that tests how you actually think, not just what you know.
+
+My score: ${report.total_score}/100
+${report.percentile}
+
+Breakdown:
+→ Financial Reasoning: ${report.financial_reasoning.score}/25 (${report.financial_reasoning.grade})
+→ Structured Thinking: ${report.structured_thinking.score}/25 (${report.structured_thinking.grade})
+→ Risk Identification: ${report.risk_identification.score}/25 (${report.risk_identification.grade})
+→ Decision Clarity: ${report.decision_clarity.score}/25 (${report.decision_clarity.grade})
+
+${report.evaluator_summary}
+
+If you're targeting finance roles and want a verified signal beyond your resume:
+👉 finapply.ai${shareId ? `
+
+Verify my score: finapply.ai/score/${shareId}` : ''}
+
+#FinApply #FinanceCareers #FISS`}
+          </div>
+          <div style={{ marginTop: 12, display: 'flex', gap: 10 }}>
+            <button
+              onClick={async () => {
+                const { generateLinkedInPost } = await import('@/lib/share');
+                const text = generateLinkedInPost({
+                  score: report.total_score,
+                  percentile: report.percentile,
+                  role: targetRole,
+                  fr: report.financial_reasoning,
+                  st: report.structured_thinking,
+                  ri: report.risk_identification,
+                  dc: report.decision_clarity,
+                  summary: report.evaluator_summary,
+                });
+                await navigator.clipboard.writeText(text);
+                setLinkedInCopied(true);
+                setTimeout(() => setLinkedInCopied(false), 2000);
+              }}
+              style={{
+                padding: '8px 18px', borderRadius: 100, fontSize: 12, fontWeight: 500,
+                background: linkedInCopied ? 'rgba(22,163,74,0.12)' : 'rgba(10,102,194,0.12)',
+                border: `1px solid ${linkedInCopied ? 'rgba(22,163,74,0.25)' : 'rgba(10,102,194,0.25)'}`,
+                color: linkedInCopied ? '#16A34A' : '#0A66C2', cursor: 'pointer',
+                transition: 'all 200ms',
+              }}
+            >
+              {linkedInCopied ? '✓ Copied to clipboard' : '📋 Copy LinkedIn Post'}
+            </button>
+            <a
+              href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareId ? `https://fin-apply-ai.vercel.app/score/${shareId}` : 'https://fin-apply-ai.vercel.app')}`}
+              target="_blank" rel="noopener noreferrer"
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                padding: '8px 18px', borderRadius: 100, fontSize: 12, fontWeight: 500,
+                background: '#0A66C2', color: '#fff', textDecoration: 'none',
+                transition: 'all 200ms',
+              }}
+            >
+              Open LinkedIn →
+            </a>
+          </div>
+        </div>
+
+        {/* ── HTML BADGE FOR EMAIL SIGNATURES ── */}
+        <div
+          style={{
+            marginTop: 24,
+            background: 'rgba(255,255,255,0.02)',
+            border: '1px solid rgba(255,255,255,0.06)',
+            borderRadius: 16,
+            padding: 24,
+          }}
+        >
+          <p style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.40)', letterSpacing: 2, marginBottom: 12 }}>
+            EMAIL SIGNATURE BADGE
+          </p>
+          <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', marginBottom: 12, lineHeight: 1.5 }}>
+            Add this HTML badge to your email signature to display your FISS Score.
+          </p>
+          {/* Badge preview */}
+          <div style={{
+            display: 'inline-flex', alignItems: 'center', gap: 8,
+            background: '#0A0A0F', border: '1px solid rgba(255,255,255,0.15)',
+            borderRadius: 100, padding: '6px 14px', marginBottom: 12,
+          }}>
+            <span style={{ color: '#2563EB', fontSize: 11, fontWeight: 700, letterSpacing: 1 }}>FISS</span>
+            <span style={{ color: '#fff', fontSize: 12, fontWeight: 600 }}>{report.total_score}/100</span>
+            <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>FinApply.ai</span>
+          </div>
+          <div>
+            <button
+              onClick={async () => {
+                const { generateBadgeHtml } = await import('@/lib/share');
+                const html = generateBadgeHtml(shareId || '', report.total_score);
+                await navigator.clipboard.writeText(html);
+                setBadgeCopied(true);
+                setTimeout(() => setBadgeCopied(false), 2000);
+              }}
+              style={{
+                padding: '6px 14px', borderRadius: 100, fontSize: 11, fontWeight: 500,
+                background: badgeCopied ? 'rgba(22,163,74,0.12)' : 'rgba(255,255,255,0.04)',
+                border: `1px solid ${badgeCopied ? 'rgba(22,163,74,0.25)' : 'rgba(255,255,255,0.08)'}`,
+                color: badgeCopied ? '#16A34A' : 'rgba(255,255,255,0.50)', cursor: 'pointer',
+                transition: 'all 200ms',
+              }}
+            >
+              {badgeCopied ? '✓ Badge HTML Copied' : '📋 Copy Badge HTML'}
+            </button>
+          </div>
         </div>
 
         {/* Loom Walkthrough */}

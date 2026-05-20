@@ -58,6 +58,7 @@ export interface FissReport {
   standout_strength: string;
   critical_gap: string;
   evaluator_summary: string;
+  employer_summary?: string;
   created_at: string;
 }
 

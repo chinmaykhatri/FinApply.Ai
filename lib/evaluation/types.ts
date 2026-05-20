@@ -41,6 +41,7 @@ export interface GeminiEvaluationResult {
   ai_generated_flag: boolean;
   ai_flag_reason: string | null;
 
+  employer_summary: string;
   word_count_assessment: string;
   time_efficiency_note: string;
 }

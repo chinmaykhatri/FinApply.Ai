@@ -17,12 +17,14 @@ export interface ServerReportData {
   standout_strength: string;
   critical_gap: string;
   evaluator_summary: string;
+  employer_summary?: string;
 }
 
 export interface ServerPdfOptions {
   candidateName: string;
   candidateCollege: string;
   report: ServerReportData;
+  shareId?: string;
 }
 
 /* ── Color helpers ─────────────────────────── */
@@ -63,7 +65,7 @@ const overallGradeColor = (score: number): string => {
 const BG: [number, number, number] = [8, 8, 12];
 
 /* ── Main generator — returns Buffer ──────── */
-export function generateFissReportBuffer({ candidateName, candidateCollege, report }: ServerPdfOptions): Buffer {
+export function generateFissReportBuffer({ candidateName, candidateCollege, report, shareId }: ServerPdfOptions): Buffer {
   const pdf = new jsPDF('p', 'mm', 'a4');
   const pageW = pdf.internal.pageSize.getWidth();
   const pageH = pdf.internal.pageSize.getHeight();
@@ -187,6 +189,28 @@ export function generateFissReportBuffer({ candidateName, candidateCollege, repo
   pdf.setFontSize(10);
   pdf.setTextColor(120, 120, 130);
   pdf.text(candidateCollege, pageW / 2, y, { align: 'center' });
+
+  // Percentile placeholder
+  y += 7;
+  pdf.setFontSize(8);
+  pdf.setTextColor(themeR, themeG, themeB);
+  pdf.text('COHORT PERCENTILE', pageW / 2 - 20, y, { align: 'center' });
+  pdf.setTextColor(100, 100, 110);
+  pdf.setFont('helvetica', 'italic');
+  pdf.text(' \u00B7 Available after Batch 1 completion (25+ candidates)', pageW / 2 + 18, y, { align: 'center' });
+  pdf.setFont('helvetica', 'normal');
+
+  // Live score URL
+  if (shareId) {
+    y += 7;
+    pdf.setFontSize(8);
+    pdf.setTextColor(100, 100, 110);
+    pdf.text('Live Score:', pageW / 2 - 18, y, { align: 'right' });
+    pdf.setTextColor(37, 99, 235);
+    pdf.textWithLink(`finapply.ai/score/${shareId}`, pageW / 2 - 16, y, {
+      url: `https://fin-apply-ai.vercel.app/score/${shareId}`,
+    });
+  }
 
   // Separator
   y += 12;
@@ -420,6 +444,53 @@ export function generateFissReportBuffer({ candidateName, candidateCollege, repo
   y += 5;
   pdf.setTextColor(60, 60, 70);
   pdf.text('Evaluated by human + AI collaboration \u00B7 Not a guarantee of employment outcomes', pageW / 2, y, { align: 'center' });
+
+  /* ═══════════════════════════════════════════
+     FOR EMPLOYERS — Executive Summary
+     ═══════════════════════════════════════════ */
+  y += 14;
+  ensureSpace(55);
+
+  const employerText = report.employer_summary
+    || `This candidate completed FinApply's FISS Deal Room \u2014 a 45-minute timed case simulation that evaluates Financial Reasoning, Structured Thinking, Risk Identification, and Decision Clarity under realistic deal conditions. Their total FISS Score of ${report.total_score}/100 reflects live analytical performance, not self-reported skills or interview coaching.`;
+  const employerLines = wrapText(employerText, contentW - 14, 9);
+  const employerH = employerLines.length * 4.5 + 20;
+
+  const employerBg = mixColor([37, 99, 235], BG, 0.06);
+  pdf.setFillColor(...employerBg);
+  pdf.roundedRect(margin, y, contentW, employerH, 3, 3, 'F');
+
+  pdf.setDrawColor(37, 99, 235);
+  pdf.setLineWidth(0.3);
+  pdf.roundedRect(margin, y, contentW, employerH, 3, 3, 'S');
+
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(7.5);
+  pdf.setTextColor(37, 99, 235);
+  pdf.text('FOR EMPLOYERS  \u00B7  EXECUTIVE SUMMARY', margin + 8, y + 8);
+
+  pdf.setFont('helvetica', 'normal');
+  pdf.setFontSize(9);
+  pdf.setTextColor(200, 200, 210);
+  employerLines.forEach((line: string, i: number) => {
+    pdf.text(line, margin + 8, y + 16 + i * 4.5);
+  });
+
+  if (shareId) {
+    y += employerH + 4;
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(8);
+    pdf.setTextColor(37, 99, 235);
+    pdf.textWithLink(`Verify score: finapply.ai/score/${shareId}`, margin + 8, y, {
+      url: `https://fin-apply-ai.vercel.app/score/${shareId}`,
+    });
+    pdf.setTextColor(100, 100, 110);
+    pdf.text('  |  Contact: team@finapply.ai', margin + 8 + pdf.getTextWidth(`Verify score: finapply.ai/score/${shareId}`) + 2, y);
+  } else {
+    y += employerH;
+  }
+
+  y += 10;
   y += 5;
   pdf.setTextColor(50, 50, 60);
   pdf.text(`Generated on ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`, pageW / 2, y, { align: 'center' });

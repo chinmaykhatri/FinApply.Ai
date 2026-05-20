@@ -54,6 +54,7 @@ CREATE TABLE IF NOT EXISTS fiss_reports (
   standout_strength TEXT,
   critical_gap TEXT,
   evaluator_summary TEXT,
+  employer_summary TEXT,
   created_at TIMESTAMPTZ DEFAULT now()
 );
 

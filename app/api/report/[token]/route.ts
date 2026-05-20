@@ -38,6 +38,7 @@ export async function GET(
         target_role,
         status,
         college_or_firm,
+        share_id,
         created_at,
         fiss_reports (*)
       `)

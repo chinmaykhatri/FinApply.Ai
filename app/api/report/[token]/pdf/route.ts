@@ -38,6 +38,7 @@ export async function GET(
         full_name,
         college_or_firm,
         status,
+        share_id,
         fiss_reports (*)
       `)
       .eq('report_token', token)
@@ -64,6 +65,7 @@ export async function GET(
     const pdfBuffer = generateFissReportBuffer({
       candidateName: app.full_name,
       candidateCollege: app.college_or_firm,
+      shareId: (app.share_id as string) || undefined,
       report: {
         total_score: r.total_score as number,
         percentile: (r.percentile as string) || 'Founding Cohort — Batch 1',
@@ -74,6 +76,7 @@ export async function GET(
         standout_strength: (r.standout_strength as string) || '',
         critical_gap: (r.critical_gap as string) || '',
         evaluator_summary: (r.evaluator_summary as string) || '',
+        employer_summary: (r.employer_summary as string) || undefined,
       },
     });
 

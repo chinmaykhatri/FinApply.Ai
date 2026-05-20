@@ -127,6 +127,7 @@ Return exactly this JSON structure. No other text. Valid JSON only.
   "one_line_summary": "[One sentence that characterizes this candidate's analytical profile. Should be specific enough to distinguish them from every other candidate.]",
   "non_obvious_signal_found": [true|false],
   "non_obvious_signal_note": "[If true: what the candidate said that showed they found it. If false: what they said instead and what they missed.]",
+  "employer_summary": "[2 sentences written FOR a hiring manager, not the candidate. Describe this candidate's analytical caliber and readiness level using specific evidence from this Deal Room. Example tone: 'This candidate demonstrated strong pattern recognition in identifying currency risk mechanisms that most junior analysts miss. Their structured approach to DCF assumptions suggests readiness for analyst-level client deliverables with moderate supervision.']",
   "ai_generated_flag": [true|false],
   "ai_flag_reason": "[If true: specific markers present. If false: null]",
   "word_count_assessment": "[adequate|thin|strong]",

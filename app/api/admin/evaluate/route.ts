@@ -139,6 +139,7 @@ export async function POST(request: NextRequest) {
         standout_strength: evaluation.standout_strength,
         critical_gap: evaluation.critical_gap,
         evaluator_summary: evaluation.one_line_summary,
+        employer_summary: evaluation.employer_summary || null,
       })
       .select()
       .single();
@@ -197,6 +198,7 @@ export async function POST(request: NextRequest) {
         pdfBuffer = generateFissReportBuffer({
           candidateName: app.full_name,
           candidateCollege: appFull?.college_or_firm || '',
+          shareId: shareId || undefined,
           report: {
             total_score: evaluation.fiss_score,
             percentile: `Founding Cohort — ${roleTrack} Track`,
@@ -219,6 +221,7 @@ export async function POST(request: NextRequest) {
             standout_strength: evaluation.standout_strength,
             critical_gap: evaluation.critical_gap,
             evaluator_summary: evaluation.one_line_summary,
+            employer_summary: evaluation.employer_summary || undefined,
           },
         });
       } catch (pdfErr) {
