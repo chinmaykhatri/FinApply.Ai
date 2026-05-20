@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Return the interactive report URL — PDF is generated client-side via jsPDF
-    const reportUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://finapply-ai-delta.vercel.app'}/report/${app.report_token}`;
+    const reportUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://fin-apply-ai.vercel.app'}/report/${app.report_token}`;
 
     auditLog('admin.action', {
       action: 'generate_report',

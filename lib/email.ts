@@ -254,7 +254,7 @@ function adminNotificationHTML(data: {
     ${data.linkedin_url ? `<tr><td style="padding:8px 0;color:rgba(255,255,255,0.40);font-size:13px">LinkedIn</td><td style="padding:8px 0;font-size:13px"><a href="${data.linkedin_url}" style="color:#2563EB">Profile →</a></td></tr>` : ''}
   </table>
   <div style="margin-top:24px;text-align:center">
-    <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://finapply.vercel.app'}/admin" style="display:inline-block;padding:10px 24px;background:#2563EB;color:#fff;border-radius:100px;text-decoration:none;font-size:13px;font-weight:500">Review in Admin →</a>
+    <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://fin-apply-ai.vercel.app'}/admin" style="display:inline-block;padding:10px 24px;background:#2563EB;color:#fff;border-radius:100px;text-decoration:none;font-size:13px;font-weight:500">Review in Admin →</a>
   </div>
 </div>`;
 }

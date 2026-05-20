@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
       console.error('Admin notification email failed:', emailErr instanceof Error ? emailErr.message : emailErr);
     }
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://finapply-ai-delta.vercel.app';
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://fin-apply-ai.vercel.app';
 
     return NextResponse.json({
       success: true,

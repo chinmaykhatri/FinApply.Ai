@@ -187,7 +187,7 @@ export const evaluateSubmission = inngest.createFunction(
       const { app } = fetchedData;
       const { evaluation: evalData, roleTrack } = evaluation;
       const { shareId } = savedData;
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://finapply-ai-delta.vercel.app';
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://fin-apply-ai.vercel.app';
       const supabase = createAdminClient();
 
       try {

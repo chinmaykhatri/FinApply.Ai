@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
     // Send emails (non-blocking)
     try {
       const { sendAdminNotification, sendWelcomeEmail } = await import('@/lib/email');
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://finapply-ai-delta.vercel.app';
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://fin-apply-ai.vercel.app';
 
       await sendWelcomeEmail({
         full_name: sanitized.full_name,

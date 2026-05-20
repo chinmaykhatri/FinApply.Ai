@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     // Import email utility dynamically to avoid build issues
     const { sendFollowUpEmail } = await import('@/lib/email');
     
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://finapply-ai-delta.vercel.app';
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://fin-apply-ai.vercel.app';
     
     await sendFollowUpEmail({
       full_name: app.full_name,

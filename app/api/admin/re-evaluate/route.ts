@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
     const { application_id, batch } = body;
 
     const supabase = createAdminClient();
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://finapply-ai-delta.vercel.app';
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://fin-apply-ai.vercel.app';
     const internalSecret = process.env.ADMIN_API_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
     if (!internalSecret) {

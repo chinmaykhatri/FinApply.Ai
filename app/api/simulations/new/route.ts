@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
     // Send welcome email for new deal room (non-blocking)
     try {
       const { sendWelcomeEmail } = await import('@/lib/email');
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://finapply-ai-delta.vercel.app';
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://fin-apply-ai.vercel.app';
       await sendWelcomeEmail({
         full_name: latest.full_name,
         email: normalizedEmail,

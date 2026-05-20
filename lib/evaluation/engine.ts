@@ -186,7 +186,7 @@ export async function runEvaluationPipeline(
   try {
     const { sendReportEmail } = await import('@/lib/email');
     const { generateFissReportBuffer } = await import('@/lib/generatePdfBuffer');
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://finapply-ai-delta.vercel.app';
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://fin-apply-ai.vercel.app';
 
     // Fetch candidate's college for PDF
     const { data: appFull } = await supabase
