@@ -94,15 +94,17 @@ export default function DashboardPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [remembered]);
 
-  const handleLookup = async () => {
+  const handleLookup = async (silent = false) => {
     if (!email.trim()) {
-      setError('Please enter your email address');
+      if (!silent) setError('Please enter your email address');
       return;
     }
 
-    setLoading(true);
-    setError('');
-    setApplications(null);
+    if (!silent) {
+      setLoading(true);
+      setError('');
+      setApplications(null);
+    }
 
     try {
       const res = await fetch('/api/dashboard', {
@@ -116,15 +118,32 @@ export default function DashboardPage() {
       if (res.ok && json.data) {
         setApplications(json.data);
         localStorage.setItem('finapply_dashboard_email', email.trim());
-      } else {
+      } else if (!silent) {
         setError(json.error || 'No applications found');
       }
     } catch {
-      setError('Something went wrong. Please try again.');
+      if (!silent) setError('Something went wrong. Please try again.');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
+
+  // Auto-poll every 15s when any application is pending evaluation
+  // Stops polling once all evaluations are complete
+  useEffect(() => {
+    const hasPending = applications?.some(
+      (app) => app.status === 'submitted' && !app.report
+    );
+
+    if (!hasPending || !email.trim()) return;
+
+    const interval = setInterval(() => {
+      handleLookup(true); // silent refresh — no loading spinner
+    }, 15_000);
+
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [applications, email]);
 
   const handleLogout = () => {
     localStorage.removeItem('finapply_dashboard_email');

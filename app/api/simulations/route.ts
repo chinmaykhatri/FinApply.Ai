@@ -2,12 +2,8 @@ import { NextResponse, NextRequest } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { applyRateLimit, sanitizeString, auditLog } from '@/lib/security';
 import { inngest } from '@/lib/inngest/client';
-import { runEvaluationPipeline } from '@/lib/evaluation/engine';
 
-// Allow up to 60s for inline evaluation (Gemini + PDF + email)
-export const maxDuration = 60;
-
-/* POST /api/simulations — Submit deal room work + auto-evaluate */
+/* POST /api/simulations — Submit deal room work + dispatch async evaluation */
 export async function POST(request: NextRequest) {
   try {
     // Rate limit: 5 submissions per 5 minutes per IP
@@ -99,55 +95,28 @@ export async function POST(request: NextRequest) {
       .update({ status: 'submitted', updated_at: new Date().toISOString() })
       .eq('id', application_id);
 
-    // 3. Dispatch evaluation — try Inngest first, fallback to INLINE evaluation
-    let evalDispatched = false;
-
-    // Inngest path (only if keys are configured)
-    if (process.env.INNGEST_EVENT_KEY) {
-      try {
-        await inngest.send({
-          name: 'app/submission.completed',
-          data: { application_id, simulation_id: sim.id },
-        });
-        evalDispatched = true;
-        console.log(`[SUBMIT] Evaluation dispatched via Inngest for app=${application_id}`);
-      } catch (inngestErr) {
-        console.warn('[SUBMIT] Inngest send failed, falling back to inline eval:', inngestErr);
-      }
-    }
-
-    // INLINE fallback — run evaluation directly in this request context
-    // This ensures the evaluation completes before the serverless function terminates.
-    // The previous fire-and-forget fetch was being killed on Vercel when the parent
-    // function returned, causing evaluations to never complete.
-    if (!evalDispatched) {
-      console.log(`[SUBMIT] Running inline evaluation for app=${application_id}, sim=${sim.id}`);
-      try {
-        const evalResult = await runEvaluationPipeline(application_id, sim.id);
-        if (evalResult.success) {
-          console.log(`[SUBMIT] Inline evaluation succeeded for app=${application_id}`);
-        } else {
-          console.error(`[SUBMIT] Inline evaluation failed: ${evalResult.error}`);
-          // Mark as eval_failed so dashboard shows the right status
-          await supabase
-            .from('applications')
-            .update({ status: 'eval_failed', updated_at: new Date().toISOString() })
-            .eq('id', application_id);
-        }
-      } catch (evalErr) {
-        console.error('[SUBMIT] Inline evaluation threw:', evalErr);
-        await supabase
-          .from('applications')
-          .update({ status: 'eval_failed', updated_at: new Date().toISOString() })
-          .eq('id', application_id);
-      }
+    // 3. Dispatch evaluation via Inngest (async, step-based)
+    // Each step runs in its own serverless invocation, so no 10s timeout issues.
+    // Report will be ready in ~1-3 minutes and emailed to the candidate.
+    try {
+      await inngest.send({
+        name: 'app/submission.completed',
+        data: { application_id, simulation_id: sim.id },
+      });
+      console.log(`[SUBMIT] Evaluation dispatched via Inngest for app=${application_id}`);
+    } catch (inngestErr) {
+      console.error('[SUBMIT] Inngest dispatch failed:', inngestErr);
+      // Mark as eval_failed so user/admin can retry
+      await supabase
+        .from('applications')
+        .update({ status: 'eval_failed', updated_at: new Date().toISOString() })
+        .eq('id', application_id);
     }
 
     auditLog('admin.action', {
       action: 'simulation_submitted',
       application_id,
       simulation_id: sim.id,
-      dispatch_method: evalDispatched ? 'inngest' : 'inline',
     }, request);
 
     return NextResponse.json({ success: true, data: { id: sim.id } }, { status: 201 });
