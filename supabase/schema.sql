@@ -7,7 +7,7 @@
 CREATE TABLE IF NOT EXISTS applications (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   full_name TEXT NOT NULL,
-  email TEXT NOT NULL UNIQUE,
+  email TEXT NOT NULL,
   college_or_firm TEXT NOT NULL,
   city TEXT NOT NULL,
   current_status TEXT NOT NULL,

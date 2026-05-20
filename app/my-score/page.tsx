@@ -187,19 +187,42 @@ function MyScoreInner() {
 
   const handleDownloadPdf = async () => {
     try {
-      const { generateFissReportPdf } = await import('@/lib/generatePdf');
-      generateFissReportPdf({
-        candidateName: data.full_name,
-        candidateCollege: data.college_or_firm,
-        report: {
-          total_score: report.total_score, percentile: report.percentile,
-          financial_reasoning: report.financial_reasoning, structured_thinking: report.structured_thinking,
-          risk_identification: report.risk_identification, decision_clarity: report.decision_clarity,
-          standout_strength: report.standout_strength, critical_gap: report.critical_gap,
-          evaluator_summary: report.evaluator_summary,
-        },
-      });
-    } catch { alert('PDF generation failed. Please try again.'); }
+      // Try server-side PDF via API (consistent with email attachment)
+      const token = searchParams.get('token') || localStorage.getItem('fa_token');
+      if (token) {
+        const pdfUrl = `/api/report/${token}/pdf`;
+        const res = await fetch(pdfUrl);
+        if (res.ok) {
+          const blob = await res.blob();
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `FISS_Report_${(data.full_name || 'Candidate').replace(/\s+/g, '_')}.pdf`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          return;
+        }
+      }
+      // Fallback: client-side generation
+      throw new Error('API fallback');
+    } catch {
+      try {
+        const { generateFissReportPdf } = await import('@/lib/generatePdf');
+        generateFissReportPdf({
+          candidateName: data.full_name,
+          candidateCollege: data.college_or_firm,
+          report: {
+            total_score: report.total_score, percentile: report.percentile,
+            financial_reasoning: report.financial_reasoning, structured_thinking: report.structured_thinking,
+            risk_identification: report.risk_identification, decision_clarity: report.decision_clarity,
+            standout_strength: report.standout_strength, critical_gap: report.critical_gap,
+            evaluator_summary: report.evaluator_summary,
+          },
+        });
+      } catch { alert('PDF generation failed. Please try again.'); }
+    }
   };
 
   const simMinutes = sim ? Math.round(sim.time_taken_seconds / 60) : null;

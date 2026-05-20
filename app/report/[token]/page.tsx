@@ -87,15 +87,35 @@ export default function ReportPage() {
     if (!report) return;
     trackEvent(EVENTS.REPORT_DOWNLOAD);
     try {
-      const { generateFissReportPdf } = await import('@/lib/generatePdf');
-      generateFissReportPdf({
-        candidateName: candidateName || 'Candidate',
-        candidateCollege: candidateCollege || '',
-        report,
-      });
-    } catch (err) {
-      console.error('PDF generation error:', err);
-      alert('PDF generation failed. Please try again.');
+      // Try server-side PDF via API (higher quality, consistent with email attachment)
+      const pdfUrl = `/api/report/${token}/pdf`;
+      const res = await fetch(pdfUrl);
+      if (res.ok) {
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `FISS_Report_${(candidateName || 'Candidate').replace(/\s+/g, '_')}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        return;
+      }
+      // Fallback to client-side generation
+      throw new Error('API PDF failed, using client-side fallback');
+    } catch {
+      try {
+        const { generateFissReportPdf } = await import('@/lib/generatePdf');
+        generateFissReportPdf({
+          candidateName: candidateName || 'Candidate',
+          candidateCollege: candidateCollege || '',
+          report,
+        });
+      } catch (err) {
+        console.error('PDF generation error:', err);
+        alert('PDF generation failed. Please try again.');
+      }
     }
   };
 

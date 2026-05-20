@@ -178,10 +178,53 @@ export async function POST(request: NextRequest) {
         .eq('id', application_id);
     }
 
-    // 9. Auto-email FISS report to candidate (non-blocking)
+    // 9. Auto-email FISS report to candidate with full PDF attachment (non-blocking)
     try {
       const { sendReportEmail } = await import('@/lib/email');
+      const { generateFissReportBuffer } = await import('@/lib/generatePdfBuffer');
       const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://finapply-ai-delta.vercel.app';
+
+      // Fetch candidate's college for PDF
+      const { data: appFull } = await supabase
+        .from('applications')
+        .select('college_or_firm')
+        .eq('id', application_id)
+        .single();
+
+      // Generate full PDF with all dimension data for email attachment
+      let pdfBuffer: Buffer | undefined;
+      try {
+        pdfBuffer = generateFissReportBuffer({
+          candidateName: app.full_name,
+          candidateCollege: appFull?.college_or_firm || '',
+          report: {
+            total_score: evaluation.fiss_score,
+            percentile: `Founding Cohort — ${roleTrack} Track`,
+            financial_reasoning: {
+              score: evaluation.fr_score, grade: evaluation.fr_grade as 'Strong' | 'Adequate' | 'Developing' | 'Critical Gap',
+              rationale: evaluation.fr_rationale, evidence: evaluation.fr_evidence, improvement: evaluation.fr_improvement,
+            },
+            structured_thinking: {
+              score: evaluation.st_score, grade: evaluation.st_grade as 'Strong' | 'Adequate' | 'Developing' | 'Critical Gap',
+              rationale: evaluation.st_rationale, evidence: evaluation.st_evidence, improvement: evaluation.st_improvement,
+            },
+            risk_identification: {
+              score: evaluation.ri_score, grade: evaluation.ri_grade as 'Strong' | 'Adequate' | 'Developing' | 'Critical Gap',
+              rationale: evaluation.ri_rationale, evidence: evaluation.ri_evidence, improvement: evaluation.ri_improvement,
+            },
+            decision_clarity: {
+              score: evaluation.dc_score, grade: evaluation.dc_grade as 'Strong' | 'Adequate' | 'Developing' | 'Critical Gap',
+              rationale: evaluation.dc_rationale, evidence: evaluation.dc_evidence, improvement: evaluation.dc_improvement,
+            },
+            standout_strength: evaluation.standout_strength,
+            critical_gap: evaluation.critical_gap,
+            evaluator_summary: evaluation.one_line_summary,
+          },
+        });
+      } catch (pdfErr) {
+        console.error('PDF generation failed (non-blocking):', pdfErr);
+      }
+
       await sendReportEmail({
         full_name: app.full_name,
         email: app.email,
@@ -198,8 +241,11 @@ export async function POST(request: NextRequest) {
         dc_grade: evaluation.dc_grade,
         one_liner: evaluation.one_line_summary,
         report_url: `${appUrl}/report/${app.report_token}`,
+        pdf_download_url: `${appUrl}/api/report/${app.report_token}/pdf`,
         dashboard_url: `${appUrl}/my-score?token=${app.report_token}`,
         share_url: shareId ? `${appUrl}/score/${shareId}` : undefined,
+        candidateCollege: appFull?.college_or_firm || '',
+        pdfBuffer,
       });
 
       // Update status to report_sent since email was successful

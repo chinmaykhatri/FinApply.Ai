@@ -56,6 +56,25 @@ export async function POST(request: NextRequest) {
     const deal_room_token = crypto.randomUUID();
     const report_token = crypto.randomUUID();
 
+    // Check if user already has an active (non-completed) application
+    const { data: existingApps } = await supabase
+      .from('applications')
+      .select('id, status, deal_room_token')
+      .ilike('email', sanitized.email);
+
+    if (existingApps && existingApps.length > 0) {
+      const activeApp = existingApps.find(a =>
+        a.status === 'applied' || a.status === 'dealroom_sent' || a.status === 'submitted'
+      );
+      if (activeApp) {
+        return NextResponse.json({
+          success: true,
+          existing: true,
+          message: 'You already have an active simulation. Check your email for your Deal Room link or visit your dashboard.',
+        }, { status: 200 });
+      }
+    }
+
     const { data, error } = await supabase
       .from('applications')
       .insert({
@@ -69,15 +88,6 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
-      // Handle duplicate email — do NOT expose existing tokens
-      if (error.code === '23505' && error.message?.includes('email')) {
-        // SECURITY: Return generic message — prevents token theft via email guessing
-        return NextResponse.json({
-          success: true,
-          existing: true,
-          message: 'An account with this email already exists. Check your email for your Deal Room link.',
-        }, { status: 200 });
-      }
       console.error('Supabase insert error:', error.message);
       return NextResponse.json({ error: 'Failed to submit registration' }, { status: 500 });
     }

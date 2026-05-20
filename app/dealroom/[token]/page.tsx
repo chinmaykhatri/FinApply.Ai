@@ -666,9 +666,26 @@ export default function DealRoomPage() {
           <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.40)', marginTop: 24 }}>
             Your FISS Score Report will be delivered to your email — typically within a few hours.
           </p>
-          <div style={{ marginTop: 32 }}>
+
+          {/* Improvement hint */}
+          <div style={{
+            marginTop: 28, padding: '16px 20px', borderRadius: 14,
+            background: 'rgba(37,99,235,0.06)', border: '1px solid rgba(37,99,235,0.15)',
+            textAlign: 'left',
+          }}>
+            <p style={{ fontSize: 13, fontWeight: 600, color: '#2563EB', marginBottom: 6 }}>💡 Want to improve?</p>
+            <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.50)', lineHeight: 1.5, margin: 0 }}>
+              After receiving your report, you can take another Deal Room simulation with a different role.
+              Your progress will be tracked across attempts so you can see how your skills improve.
+            </p>
+          </div>
+
+          <div style={{ marginTop: 32, display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
             <PillButton variant="secondary" href="/">
               Return to FinApply.ai
+            </PillButton>
+            <PillButton variant="primary" href="/dashboard">
+              Go to Dashboard →
             </PillButton>
           </div>
         </div>

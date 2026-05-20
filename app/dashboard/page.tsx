@@ -46,6 +46,34 @@ export default function DashboardPage() {
   const [applications, setApplications] = useState<AppData[] | null>(null);
   const [error, setError] = useState('');
   const [remembered, setRemembered] = useState(false);
+  const [showNewSim, setShowNewSim] = useState(false);
+  const [newSimRole, setNewSimRole] = useState('ib_analyst');
+  const [newSimLoading, setNewSimLoading] = useState(false);
+  const [newSimError, setNewSimError] = useState('');
+
+  const handleStartNewSim = async () => {
+    setNewSimLoading(true);
+    setNewSimError('');
+    try {
+      const res = await fetch('/api/simulations/new', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim(), target_role: newSimRole }),
+      });
+      const json = await res.json();
+      if (res.ok && json.data) {
+        localStorage.setItem('finapply_deal_token', json.data.deal_room_token);
+        localStorage.setItem('finapply_registered', 'true');
+        window.location.href = json.data.deal_room_url;
+      } else {
+        setNewSimError(json.error || 'Failed to create new simulation');
+      }
+    } catch {
+      setNewSimError('Something went wrong. Please try again.');
+    } finally {
+      setNewSimLoading(false);
+    }
+  };
 
   // Check localStorage for remembered email
   useEffect(() => {
@@ -355,6 +383,84 @@ export default function DashboardPage() {
                       <span style={{ fontSize: 13, color: '#16A34A', fontWeight: 500 }}>
                         Strongest growth: {best.label} (+{bestDelta})
                       </span>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
+            {/* ═══ START NEW DEAL ROOM CTA ═══ */}
+            {(() => {
+              const hasCompleted = applications.some(a => a.status === 'scored' || a.status === 'report_sent');
+              const hasActive = applications.some(a => a.status === 'applied' || a.status === 'dealroom_sent' || a.status === 'submitted');
+              if (!hasCompleted || hasActive) return null;
+
+              return (
+                <div style={{
+                  background: showNewSim ? 'rgba(37,99,235,0.04)' : 'rgba(255,255,255,0.03)',
+                  border: showNewSim ? '1px solid rgba(37,99,235,0.20)' : '1px solid rgba(255,255,255,0.08)',
+                  borderRadius: 16, padding: 28, marginBottom: 20,
+                  transition: 'all 300ms ease',
+                }}>
+                  {!showNewSim ? (
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <div style={{
+                          width: 44, height: 44, borderRadius: 12,
+                          background: 'linear-gradient(135deg, rgba(37,99,235,0.15), rgba(139,92,246,0.15))',
+                          border: '1px solid rgba(37,99,235,0.20)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20,
+                        }}>🏦</div>
+                        <div>
+                          <p style={{ fontSize: 15, fontWeight: 600, color: '#fff', margin: '0 0 2px' }}>
+                            Ready for another challenge?
+                          </p>
+                          <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.40)', margin: 0 }}>
+                            Try a different role or improve your score
+                          </p>
+                        </div>
+                      </div>
+                      <PillButton variant="primary" onClick={() => { setShowNewSim(true); setNewSimError(''); }}>
+                        Start New Deal Room →
+                      </PillButton>
+                    </div>
+                  ) : (
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20 }}>
+                        <span style={{ fontSize: 16 }}>🎯</span>
+                        <span style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>Choose Your Target Role</span>
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 10, marginBottom: 20 }}>
+                        {Object.entries(ROLE_LABELS).map(([value, label]) => (
+                          <button
+                            key={value}
+                            onClick={() => setNewSimRole(value)}
+                            style={{
+                              padding: '14px 16px', borderRadius: 12, cursor: 'pointer',
+                              textAlign: 'left', transition: 'all 200ms ease',
+                              background: newSimRole === value ? 'rgba(37,99,235,0.12)' : 'rgba(255,255,255,0.03)',
+                              border: newSimRole === value ? '1px solid rgba(37,99,235,0.40)' : '1px solid rgba(255,255,255,0.08)',
+                            }}
+                          >
+                            <p style={{
+                              fontSize: 13, fontWeight: 600, margin: '0 0 2px',
+                              color: newSimRole === value ? '#2563EB' : '#fff',
+                            }}>{label}</p>
+                            <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', margin: 0 }}>
+                              {value.replace(/_/g, ' ')}
+                            </p>
+                          </button>
+                        ))}
+                      </div>
+                      {newSimError && (
+                        <p style={{ fontSize: 13, color: '#DC2626', marginBottom: 12 }}>{newSimError}</p>
+                      )}
+                      <div style={{ display: 'flex', gap: 10 }}>
+                        <PillButton variant="outline" onClick={() => setShowNewSim(false)}>Cancel</PillButton>
+                        <PillButton variant="primary" onClick={handleStartNewSim} loading={newSimLoading}>
+                          Enter Deal Room as {ROLE_LABELS[newSimRole]} →
+                        </PillButton>
+                      </div>
                     </div>
                   )}
                 </div>

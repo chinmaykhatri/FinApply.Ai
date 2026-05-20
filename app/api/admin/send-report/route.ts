@@ -39,7 +39,30 @@ export async function POST(request: NextRequest) {
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://finapply.vercel.app';
 
-    // Send FISS report email
+    // Generate PDF buffer for attachment
+    let pdfBuffer: Buffer | undefined;
+    try {
+      const { generateFissReportBuffer } = await import('@/lib/generatePdfBuffer');
+      pdfBuffer = generateFissReportBuffer({
+        candidateName: app.full_name,
+        candidateCollege: app.college_or_firm || '',
+        report: {
+          total_score: report.total_score,
+          percentile: report.percentile || 'Founding Cohort — Batch 1',
+          financial_reasoning: report.financial_reasoning,
+          structured_thinking: report.structured_thinking,
+          risk_identification: report.risk_identification,
+          decision_clarity: report.decision_clarity,
+          standout_strength: report.standout_strength || '',
+          critical_gap: report.critical_gap || '',
+          evaluator_summary: report.evaluator_summary || '',
+        },
+      });
+    } catch (pdfErr) {
+      console.error('PDF generation for email failed (non-blocking):', pdfErr);
+    }
+
+    // Send FISS report email with PDF attachment
     const roleTrack = app.target_role || 'Investment Banking';
     await sendReportEmail({
       full_name: app.full_name,
@@ -57,7 +80,10 @@ export async function POST(request: NextRequest) {
       dc_grade: report.decision_clarity?.grade || 'N/A',
       one_liner: report.evaluator_summary || '',
       report_url: `${appUrl}/report/${app.report_token}`,
+      pdf_download_url: `${appUrl}/api/report/${app.report_token}/pdf`,
       loom_url: report.loom_url || undefined,
+      candidateCollege: app.college_or_firm || '',
+      pdfBuffer,
     });
 
     // Update status

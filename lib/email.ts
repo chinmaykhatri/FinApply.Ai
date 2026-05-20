@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import type { Attachment } from 'nodemailer/lib/mailer';
 
 /* ── Gmail SMTP Transport ── */
 function getTransporter() {
@@ -12,7 +13,7 @@ function getTransporter() {
   });
 }
 
-async function sendMail(to: string, subject: string, html: string) {
+async function sendMail(to: string, subject: string, html: string, attachments?: Attachment[]) {
   const transporter = getTransporter();
   return transporter.sendMail({
     from: `Chinmay from FinApply <${process.env.GMAIL_USER}>`,
@@ -20,6 +21,7 @@ async function sendMail(to: string, subject: string, html: string) {
     to,
     subject,
     html,
+    ...(attachments && attachments.length > 0 ? { attachments } : {}),
   });
 }
 
@@ -99,6 +101,7 @@ function reportDeliveryHTML(data: {
   dc_score: number; dc_grade: string;
   one_liner: string;
   report_url: string;
+  pdf_download_url?: string;
   dashboard_url?: string;
   share_url?: string;
   loom_url?: string;
@@ -139,6 +142,13 @@ function reportDeliveryHTML(data: {
   <div style="text-align:center;margin:24px 0">
     <a href="${data.report_url}" style="${LINK_BTN}">VIEW FULL REPORT →</a>
   </div>
+
+  ${data.pdf_download_url ? `
+  <div style="text-align:center;margin:0 0 24px;padding:16px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px">
+    <p style="font-size:12px;color:rgba(255,255,255,0.35);margin:0 0 8px">Your full FISS Report PDF is also attached to this email</p>
+    <a href="${data.pdf_download_url}" style="color:#2563EB;font-size:13px;font-weight:500;text-decoration:none">Download PDF Report →</a>
+  </div>
+  ` : ''}
 
   ${data.dashboard_url ? `
   <div style="text-align:center;margin:0 0 24px;padding:16px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px">
@@ -302,16 +312,59 @@ export async function sendReportEmail(data: {
   dc_score: number; dc_grade: string;
   one_liner: string;
   report_url: string;
+  pdf_download_url?: string;
   dashboard_url?: string;
   share_url?: string;
   loom_url?: string;
   feedback_url?: string;
+  /** Pre-generated PDF buffer to attach — avoids regenerating */
+  pdfBuffer?: Buffer;
+  candidateCollege?: string;
 }) {
   const firstName = data.full_name.split(' ')[0];
+  const safeName = (data.full_name || 'Candidate').replace(/\s+/g, '_');
+
+  // Build attachments: attach PDF if buffer provided, or generate one
+  const attachments: Attachment[] = [];
+  let pdfBuf = data.pdfBuffer;
+
+  if (!pdfBuf) {
+    // Generate server-side PDF for attachment
+    try {
+      const { generateFissReportBuffer } = await import('@/lib/generatePdfBuffer');
+      pdfBuf = generateFissReportBuffer({
+        candidateName: data.full_name,
+        candidateCollege: data.candidateCollege || '',
+        report: {
+          total_score: data.fiss_score,
+          percentile: data.percentile,
+          financial_reasoning: { score: data.fr_score, grade: data.fr_grade as 'Strong' | 'Adequate' | 'Developing' | 'Critical Gap', rationale: '', evidence: '', improvement: '' },
+          structured_thinking: { score: data.st_score, grade: data.st_grade as 'Strong' | 'Adequate' | 'Developing' | 'Critical Gap', rationale: '', evidence: '', improvement: '' },
+          risk_identification: { score: data.ri_score, grade: data.ri_grade as 'Strong' | 'Adequate' | 'Developing' | 'Critical Gap', rationale: '', evidence: '', improvement: '' },
+          decision_clarity: { score: data.dc_score, grade: data.dc_grade as 'Strong' | 'Adequate' | 'Developing' | 'Critical Gap', rationale: '', evidence: '', improvement: '' },
+          standout_strength: '',
+          critical_gap: '',
+          evaluator_summary: data.one_liner,
+        },
+      });
+    } catch (pdfErr) {
+      console.error('PDF generation for email attachment failed (non-blocking):', pdfErr);
+    }
+  }
+
+  if (pdfBuf) {
+    attachments.push({
+      filename: `FISS_Report_${safeName}.pdf`,
+      content: pdfBuf,
+      contentType: 'application/pdf',
+    });
+  }
+
   return sendMail(
     data.email,
     `Your FISS Score: ${data.fiss_score}/100 — ${firstName}`,
     reportDeliveryHTML(data),
+    attachments,
   );
 }
 
