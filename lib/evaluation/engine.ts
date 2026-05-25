@@ -62,6 +62,17 @@ export async function runEvaluationPipeline(
     return { success: false, error: 'Application not found' };
   }
 
+  // 2b. Ensure report_token exists — legacy records may be missing it
+  if (!app.report_token) {
+    const newToken = crypto.randomUUID();
+    await supabase
+      .from('applications')
+      .update({ report_token: newToken })
+      .eq('id', application_id);
+    app.report_token = newToken;
+    console.log(`[EVAL ENGINE] Generated missing report_token for app=${application_id}`);
+  }
+
   // 3. Resolve the case
   const caseCode = sim.case_code || 'IB-001';
   const dealCase = getCaseByCode(caseCode);
