@@ -35,6 +35,10 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  // Skip ESLint during production builds — lint in CI/locally instead
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   images: {
     remotePatterns: [
       {
