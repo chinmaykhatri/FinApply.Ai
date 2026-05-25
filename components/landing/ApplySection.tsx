@@ -107,8 +107,14 @@ export default function ApplySection() {
         setSubmitted(true);
         trackEvent(EVENTS.REGISTER_COMPLETE, { role: formData.target_role });
 
-        // Go straight to dashboard — full access, no approval needed
-        setTimeout(() => router.push('/dashboard'), 2000);
+        // Route based on user state:
+        // - Completed report → go to report page
+        // - Active/new application → go to dashboard
+        if (result.has_report && result.data?.report_token) {
+          setTimeout(() => router.push(`/report/${result.data.report_token}`), 2000);
+        } else {
+          setTimeout(() => router.push('/dashboard'), 2000);
+        }
       } else {
         setFormError(result.error || 'Registration failed. Please try again.');
         setLoading(false);

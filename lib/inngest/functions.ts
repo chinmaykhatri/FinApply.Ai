@@ -57,18 +57,6 @@ export const evaluateSubmission = inngest.createFunction(
         throw new Error('Application not found');
       }
 
-      // Ensure report_token exists — legacy/edge-case records may be missing it
-      if (!app.report_token) {
-        const newToken = crypto.randomUUID();
-        const adminSb = createAdminClient();
-        await adminSb
-          .from('applications')
-          .update({ report_token: newToken })
-          .eq('id', application_id);
-        app.report_token = newToken;
-        console.log(`[INNGEST] Generated missing report_token for app=${application_id}`);
-      }
-
       return { sim, app };
     });
 

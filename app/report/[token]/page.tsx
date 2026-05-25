@@ -149,11 +149,14 @@ export default function ReportPage() {
           <div style={{ fontSize: 48, marginBottom: 24 }}>🔒</div>
           <h1 style={{ fontSize: 28, fontWeight: 600, color: '#fff' }}>Report Not Found</h1>
           <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.50)', marginTop: 16, lineHeight: 1.6 }}>
-            This report link is invalid or has expired. Please check your email for the correct link.
+            This report link may be outdated or invalid. If you&apos;ve re-registered, please check your latest email for the updated report link.
           </p>
-          <div style={{ marginTop: 32 }}>
-            <PillButton variant="secondary" href="/">
-              Return to FinApply.ai
+          <div style={{ marginTop: 32, display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+            <PillButton variant="primary" href="/dashboard">
+              Go to Dashboard
+            </PillButton>
+            <PillButton variant="outline" href="/">
+              Return Home
             </PillButton>
           </div>
         </div>

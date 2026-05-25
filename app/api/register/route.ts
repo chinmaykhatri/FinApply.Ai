@@ -56,13 +56,15 @@ export async function POST(request: NextRequest) {
     const deal_room_token = crypto.randomUUID();
     const report_token = crypto.randomUUID();
 
-    // Check if user already has an active (non-completed) application
+    // Check if user already has any application
     const { data: existingApps } = await supabase
       .from('applications')
-      .select('id, status, deal_room_token')
-      .ilike('email', sanitized.email);
+      .select('id, status, deal_room_token, report_token')
+      .ilike('email', sanitized.email)
+      .order('created_at', { ascending: false });
 
     if (existingApps && existingApps.length > 0) {
+      // Priority 1: Return active (in-progress) application
       const activeApp = existingApps.find(a =>
         a.status === 'applied' || a.status === 'dealroom_sent' || a.status === 'submitted'
       );
@@ -74,6 +76,24 @@ export async function POST(request: NextRequest) {
           data: {
             id: activeApp.id,
             deal_room_token: activeApp.deal_room_token,
+          },
+        }, { status: 200 });
+      }
+
+      // Priority 2: Return completed application with report links
+      const completedApp = existingApps.find(a =>
+        a.status === 'scored' || a.status === 'report_sent'
+      );
+      if (completedApp) {
+        return NextResponse.json({
+          success: true,
+          existing: true,
+          has_report: true,
+          message: 'You already have a completed FISS Report. Check your email or visit the link below.',
+          data: {
+            id: completedApp.id,
+            deal_room_token: completedApp.deal_room_token,
+            report_token: completedApp.report_token,
           },
         }, { status: 200 });
       }
