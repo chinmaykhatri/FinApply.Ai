@@ -1,4 +1,4 @@
-import { NextResponse, NextRequest } from 'next/server';
+import { NextResponse, NextRequest, after } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { applyRateLimit, sanitizeString, isValidEmail, isValidURL, auditLog } from '@/lib/security';
 
@@ -71,6 +71,10 @@ export async function POST(request: NextRequest) {
           success: true,
           existing: true,
           message: 'You already have an active simulation. Check your email for your Deal Room link or visit your dashboard.',
+          data: {
+            id: activeApp.id,
+            deal_room_token: activeApp.deal_room_token,
+          },
         }, { status: 200 });
       }
     }
@@ -98,33 +102,45 @@ export async function POST(request: NextRequest) {
       application_id: data.id,
     }, request);
 
-    // Send emails (non-blocking)
-    try {
-      const { sendAdminNotification, sendWelcomeEmail } = await import('@/lib/email');
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://fin-apply-ai.vercel.app';
+    // ── Send emails in background (truly non-blocking) ──
+    // The response is returned immediately; emails fire in parallel behind the scenes.
+    // Using void + catch to ensure they never throw into the response path.
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://fin-apply-ai.vercel.app';
 
-      await sendWelcomeEmail({
-        full_name: sanitized.full_name,
-        email: sanitized.email,
-        deal_room_url: `${appUrl}/dealroom/${deal_room_token}`,
-      });
-
-      await sendAdminNotification({
-        full_name: sanitized.full_name,
-        email: sanitized.email,
-        target_role: sanitized.target_role,
-        college_or_firm: sanitized.college_or_firm,
-      });
-    } catch (emailErr: unknown) {
+    const emailPromise = import('@/lib/email').then(async ({ sendWelcomeEmail, sendAdminNotification }) => {
+      await Promise.allSettled([
+        sendWelcomeEmail({
+          full_name: sanitized.full_name,
+          email: sanitized.email,
+          deal_room_url: `${appUrl}/dealroom/${deal_room_token}`,
+        }).then(() => {
+          console.log(`[EMAIL] Welcome email sent to ${sanitized.email}`);
+        }),
+        sendAdminNotification({
+          full_name: sanitized.full_name,
+          email: sanitized.email,
+          target_role: sanitized.target_role,
+          college_or_firm: sanitized.college_or_firm,
+        }).then(() => {
+          console.log(`[EMAIL] Admin notification sent for ${sanitized.email}`);
+        }),
+      ]);
+    }).catch((emailErr: unknown) => {
       const errMsg = emailErr instanceof Error ? emailErr.message : String(emailErr);
-      console.error('Email notification failed:', errMsg);
-      // Don't fail the registration if email fails
-    }
+      console.error('[EMAIL] Email notification failed:', errMsg);
+    });
 
-    // Notify Slack (non-blocking)
-    import('@/lib/slack').then(({ notifySlack }) => {
-      notifySlack(`🔔 *New Registration*\n*Name:* ${sanitized.full_name}\n*Email:* ${sanitized.email}\n*Role:* ${sanitized.target_role}\n*College:* ${sanitized.college_or_firm}`).catch(() => {});
+    // Notify Slack in background (non-blocking)
+    const slackPromise = import('@/lib/slack').then(({ notifySlack }) => {
+      return notifySlack(`🔔 *New Registration*\n*Name:* ${sanitized.full_name}\n*Email:* ${sanitized.email}\n*Role:* ${sanitized.target_role}\n*College:* ${sanitized.college_or_firm}`);
     }).catch(() => {});
+
+    // Use Next.js 15 `after()` to run background tasks after the response is sent,
+    // keeping the serverless function alive for email delivery.
+    after(async () => {
+      await emailPromise;
+      await slackPromise;
+    });
 
     return NextResponse.json({
       success: true,

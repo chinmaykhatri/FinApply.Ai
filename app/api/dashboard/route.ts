@@ -68,14 +68,19 @@ export async function POST(request: NextRequest) {
           .order('submitted_at', { ascending: false })
           .limit(1);
 
-        // SECURITY: Strip tokens from response — users get tokens via email only
+        // SECURITY: Strip tokens from response — but keep deal_room_token for users
+        // who haven't submitted yet, so they can always access their Deal Room
         const { deal_room_token: _drt, report_token: _rt, ...safeApp } = app;
+        const hasActiveDealRoom = !sims?.length && ['applied', 'dealroom_sent'].includes(app.status);
 
         return {
           ...safeApp,
-          // Provide boolean flags instead of raw tokens
+          // Provide boolean flags for general status
           has_deal_room: !!_drt,
           has_report: !!_rt,
+          // Include deal_room_token only for users who need to access the Deal Room
+          // (not yet submitted). Once submitted, token is no longer needed.
+          deal_room_token: hasActiveDealRoom ? _drt : undefined,
           report: reports?.[0] || null,
           simulation: sims?.[0] || null,
         };

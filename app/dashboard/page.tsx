@@ -27,6 +27,7 @@ interface AppData {
   status: string;
   has_deal_room: boolean;
   has_report: boolean;
+  deal_room_token?: string;
   created_at: string;
   updated_at: string;
   report: {
@@ -118,6 +119,11 @@ export default function DashboardPage() {
       if (res.ok && json.data) {
         setApplications(json.data);
         localStorage.setItem('finapply_dashboard_email', email.trim());
+        // Sync deal_room_token to localStorage if available from API
+        const activeApp = json.data.find((a: AppData) => a.deal_room_token);
+        if (activeApp?.deal_room_token) {
+          localStorage.setItem('finapply_deal_token', activeApp.deal_room_token);
+        }
       } else if (!silent) {
         setError(json.error || 'No applications found');
       }
@@ -572,10 +578,13 @@ export default function DashboardPage() {
                     <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                       {/* Show Deal Room button if not yet submitted */}
                       {!hasSim && app.has_deal_room && (() => {
+                        // Use token from API response first, then fall back to localStorage
+                        const tokenFromApi = app.deal_room_token;
                         const savedToken = typeof window !== 'undefined' ? localStorage.getItem('finapply_deal_token') : null;
-                        if (savedToken) {
+                        const dealToken = tokenFromApi || savedToken;
+                        if (dealToken) {
                           return (
-                            <PillButton variant="primary" href={`/dealroom/${savedToken}`}>
+                            <PillButton variant="primary" href={`/dealroom/${dealToken}`}>
                               Enter Deal Room →
                             </PillButton>
                           );
