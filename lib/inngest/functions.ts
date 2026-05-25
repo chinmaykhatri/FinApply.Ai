@@ -29,7 +29,7 @@ export const evaluateSubmission = inngest.createFunction(
     retries: 3,
     triggers: [{ event: 'app/submission.completed' }],
   },
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // eslint-disable-next-line no-explicit-any
   async ({ event, step }: { event: any; step: any }) => {
     const { application_id, simulation_id } = event.data;
 
