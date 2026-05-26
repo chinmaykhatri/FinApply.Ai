@@ -51,6 +51,9 @@ export default function DashboardPage() {
   const [newSimRole, setNewSimRole] = useState('ib_analyst');
   const [newSimLoading, setNewSimLoading] = useState(false);
   const [newSimError, setNewSimError] = useState('');
+  const [retryingApp, setRetryingApp] = useState<string | null>(null);
+  const [retryResult, setRetryResult] = useState<{ id: string; msg: string; ok: boolean } | null>(null);
+  const retryAttempted = React.useRef<Set<string>>(new Set());
 
   const handleStartNewSim = async () => {
     setNewSimLoading(true);
@@ -134,14 +137,66 @@ export default function DashboardPage() {
     }
   };
 
+  // Auto-retry stuck evaluations after 2 minutes
+  // This self-healing mechanism bypasses Inngest entirely
+  const handleRetryEvaluation = async (applicationId: string) => {
+    if (retryingApp) return; // prevent concurrent retries
+    setRetryingApp(applicationId);
+    setRetryResult(null);
+    try {
+      const res = await fetch('/api/evaluate-retry', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim(), application_id: applicationId }),
+      });
+      const json = await res.json();
+      if (res.ok && json.success) {
+        setRetryResult({ id: applicationId, msg: json.message || 'Evaluation completed!', ok: true });
+        // Refresh dashboard data
+        setTimeout(() => handleLookup(true), 2000);
+      } else {
+        setRetryResult({ id: applicationId, msg: json.error || 'Retry failed', ok: false });
+      }
+    } catch {
+      setRetryResult({ id: applicationId, msg: 'Network error — please try again', ok: false });
+    } finally {
+      setRetryingApp(null);
+    }
+  };
+
   // Auto-poll every 15s when any application is pending evaluation
-  // Stops polling once all evaluations are complete
+  // Auto-triggers retry after 2 minutes of being stuck
   useEffect(() => {
     const hasPending = applications?.some(
       (app) => app.status === 'submitted' && !app.report
     );
 
     if (!hasPending || !email.trim()) return;
+
+    // Auto-retry stuck evaluations (only once per app)
+    const stuckApps = applications?.filter(
+      (app) =>
+        (app.status === 'submitted' || app.status === 'eval_failed') &&
+        !app.report &&
+        app.simulation &&
+        !retryAttempted.current.has(app.id)
+    );
+
+    if (stuckApps && stuckApps.length > 0) {
+      // Check if the submission is > 2 minutes old
+      const now = Date.now();
+      for (const app of stuckApps) {
+        const submittedAt = new Date(app.simulation!.submitted_at).getTime();
+        const ageMs = now - submittedAt;
+        if (ageMs > 2 * 60 * 1000) {
+          // Mark as attempted to prevent duplicate retries
+          retryAttempted.current.add(app.id);
+          console.log(`[Dashboard] Auto-retrying stuck eval for app=${app.id} (age=${Math.round(ageMs/1000)}s)`);
+          handleRetryEvaluation(app.id);
+          break; // Only retry one at a time
+        }
+      }
+    }
 
     const interval = setInterval(() => {
       handleLookup(true); // silent refresh — no loading spinner
@@ -629,26 +684,65 @@ export default function DashboardPage() {
 
                       {/* Show pending status if submitted but not scored */}
                       {hasSim && !hasReport && app.status !== 'rejected' && (
-                        <div style={{
-                          display: 'flex', alignItems: 'center', gap: 8,
-                          padding: '8px 16px', borderRadius: 100,
-                          background: app.status === 'eval_failed'
-                            ? 'rgba(239,68,68,0.08)'
-                            : 'rgba(217,119,6,0.08)',
-                          border: app.status === 'eval_failed'
-                            ? '1px solid rgba(239,68,68,0.20)'
-                            : '1px solid rgba(217,119,6,0.20)',
-                        }}>
-                          <div className="spinner" style={{ width: 14, height: 14, borderWidth: 2 }} />
-                          <span style={{
-                            fontSize: 13,
-                            color: app.status === 'eval_failed' ? '#EF4444' : '#D97706',
-                            fontWeight: 500,
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                          <div style={{
+                            display: 'flex', alignItems: 'center', gap: 8,
+                            padding: '8px 16px', borderRadius: 100,
+                            background: app.status === 'eval_failed'
+                              ? 'rgba(239,68,68,0.08)'
+                              : retryingApp === app.id
+                              ? 'rgba(37,99,235,0.08)'
+                              : 'rgba(217,119,6,0.08)',
+                            border: app.status === 'eval_failed'
+                              ? '1px solid rgba(239,68,68,0.20)'
+                              : retryingApp === app.id
+                              ? '1px solid rgba(37,99,235,0.20)'
+                              : '1px solid rgba(217,119,6,0.20)',
                           }}>
-                            {app.status === 'eval_failed'
-                              ? 'Evaluation delayed — our team is retrying your report'
-                              : 'Evaluation in progress — report coming soon'}
-                          </span>
+                            <div className="spinner" style={{ width: 14, height: 14, borderWidth: 2 }} />
+                            <span style={{
+                              fontSize: 13,
+                              color: app.status === 'eval_failed' ? '#EF4444'
+                                : retryingApp === app.id ? '#2563EB'
+                                : '#D97706',
+                              fontWeight: 500,
+                            }}>
+                              {retryingApp === app.id
+                                ? 'Running AI evaluation now — this takes 30-60 seconds...'
+                                : app.status === 'eval_failed'
+                                ? 'Evaluation encountered an issue'
+                                : 'Evaluation in progress — report coming soon'}
+                            </span>
+                          </div>
+
+                          {/* Retry button — visible when stuck or failed */}
+                          {!retryingApp && (
+                            <button
+                              onClick={() => handleRetryEvaluation(app.id)}
+                              style={{
+                                padding: '8px 18px', borderRadius: 100, fontSize: 12,
+                                fontWeight: 600, cursor: 'pointer',
+                                background: 'rgba(37,99,235,0.10)',
+                                border: '1px solid rgba(37,99,235,0.25)',
+                                color: '#2563EB', transition: 'all 200ms ease',
+                                alignSelf: 'flex-start',
+                              }}
+                            >
+                              {app.status === 'eval_failed' ? '🔄 Retry Evaluation' : '⚡ Generate Report Now'}
+                            </button>
+                          )}
+
+                          {/* Retry result message */}
+                          {retryResult && retryResult.id === app.id && (
+                            <div style={{
+                              padding: '6px 14px', borderRadius: 8, fontSize: 12, fontWeight: 500,
+                              background: retryResult.ok ? 'rgba(22,163,74,0.08)' : 'rgba(239,68,68,0.08)',
+                              border: retryResult.ok ? '1px solid rgba(22,163,74,0.20)' : '1px solid rgba(239,68,68,0.20)',
+                              color: retryResult.ok ? '#16A34A' : '#EF4444',
+                            }}>
+                              {retryResult.ok ? '✓ ' : '✗ '}{retryResult.msg}
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>

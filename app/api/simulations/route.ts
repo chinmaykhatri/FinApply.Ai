@@ -3,6 +3,9 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { applyRateLimit, sanitizeString, auditLog } from '@/lib/security';
 import { inngest } from '@/lib/inngest/client';
 
+// Allow up to 120s for direct evaluation fallback
+export const maxDuration = 120;
+
 /* POST /api/simulations — Submit deal room work + dispatch async evaluation */
 export async function POST(request: NextRequest) {
   try {
@@ -98,19 +101,40 @@ export async function POST(request: NextRequest) {
     // 3. Dispatch evaluation via Inngest (async, step-based)
     // Each step runs in its own serverless invocation, so no 10s timeout issues.
     // Report will be ready in ~1-3 minutes and emailed to the candidate.
+    // FALLBACK: If Inngest dispatch fails, run evaluation directly via engine.
+    let inngestOk = false;
     try {
       await inngest.send({
         name: 'app/submission.completed',
         data: { application_id, simulation_id: sim.id },
       });
+      inngestOk = true;
       console.log(`[SUBMIT] Evaluation dispatched via Inngest for app=${application_id}`);
     } catch (inngestErr) {
-      console.error('[SUBMIT] Inngest dispatch failed:', inngestErr);
-      // Mark as eval_failed so user/admin can retry
-      await supabase
-        .from('applications')
-        .update({ status: 'eval_failed', updated_at: new Date().toISOString() })
-        .eq('id', application_id);
+      console.error('[SUBMIT] Inngest dispatch failed, falling back to direct eval:', inngestErr);
+    }
+
+    // If Inngest failed, run evaluation directly (self-healing)
+    if (!inngestOk) {
+      try {
+        // Dynamic import to avoid loading the engine unless needed
+        const { runEvaluationPipeline } = await import('@/lib/evaluation/engine');
+        console.log(`[SUBMIT] Running direct evaluation fallback for app=${application_id}`);
+        const evalResult = await runEvaluationPipeline(application_id, sim.id);
+        if (!evalResult.success) {
+          console.error('[SUBMIT] Direct eval also failed:', evalResult.error);
+          await supabase
+            .from('applications')
+            .update({ status: 'eval_failed', updated_at: new Date().toISOString() })
+            .eq('id', application_id);
+        }
+      } catch (directErr) {
+        console.error('[SUBMIT] Direct eval fallback error:', directErr);
+        await supabase
+          .from('applications')
+          .update({ status: 'eval_failed', updated_at: new Date().toISOString() })
+          .eq('id', application_id);
+      }
     }
 
     auditLog('admin.action', {
