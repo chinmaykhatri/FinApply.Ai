@@ -18,6 +18,7 @@ export interface ServerReportData {
   critical_gap: string;
   evaluator_summary: string;
   employer_summary?: string;
+  confidence_level?: 'HIGH' | 'MEDIUM' | 'LOW';
 }
 
 export interface ServerPdfOptions {
@@ -63,6 +64,10 @@ const overallGradeColor = (score: number): string => {
 };
 
 const BG: [number, number, number] = [8, 8, 12];
+
+/* ── Title-case helper ────────────────────── */
+const toTitleCase = (s: string): string =>
+  s.replace(/\b\w+/g, (w) => w[0].toUpperCase() + w.slice(1).toLowerCase());
 
 /* ── Main generator — returns Buffer ──────── */
 export function generateFissReportBuffer({ candidateName, candidateCollege, report, shareId }: ServerPdfOptions): Buffer {
@@ -188,7 +193,7 @@ export function generateFissReportBuffer({ candidateName, candidateCollege, repo
   pdf.setFont('helvetica', 'normal');
   pdf.setFontSize(10);
   pdf.setTextColor(120, 120, 130);
-  pdf.text(candidateCollege, pageW / 2, y, { align: 'center' });
+  pdf.text(toTitleCase(candidateCollege), pageW / 2, y, { align: 'center' });
 
   // Percentile placeholder
   y += 7;
@@ -249,9 +254,30 @@ export function generateFissReportBuffer({ candidateName, candidateCollege, repo
   });
 
   /* ═══════════════════════════════════════════
+     CONFIDENCE INDEX BADGE
+     ═══════════════════════════════════════════ */
+  y += summaryBoxH + 10;
+  ensureSpace(16);
+
+  const confLevel = report.confidence_level || 'HIGH';
+  const confColor: [number, number, number] = confLevel === 'HIGH' ? [22, 163, 74] : confLevel === 'MEDIUM' ? [217, 119, 6] : [220, 38, 38];
+  const confLabel = `Confidence: ${confLevel}`;
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(7);
+  const confW = pdf.getTextWidth(confLabel) + 10;
+  const confBg = mixColor(confColor, [10, 10, 15] as [number, number, number], 0.12);
+  pdf.setFillColor(...confBg);
+  pdf.roundedRect(margin, y - 3, confW, 8, 4, 4, 'F');
+  pdf.setDrawColor(...confColor);
+  pdf.setLineWidth(0.2);
+  pdf.roundedRect(margin, y - 3, confW, 8, 4, 4, 'S');
+  pdf.setTextColor(...confColor);
+  pdf.text(confLabel, margin + 5, y + 2);
+
+  /* ═══════════════════════════════════════════
      DIMENSION BREAKDOWN
      ═══════════════════════════════════════════ */
-  y += summaryBoxH + 14;
+  y += 14;
   ensureSpace(140);
 
   pdf.setFont('helvetica', 'normal');
@@ -391,7 +417,7 @@ export function generateFissReportBuffer({ candidateName, candidateCollege, repo
   pdf.setFont('helvetica', 'bold');
   pdf.setFontSize(7.5);
   pdf.setTextColor(22, 163, 74);
-  pdf.text('\u2726  STANDOUT STRENGTH', margin + 8, y + 8);
+  pdf.text('[+]  STANDOUT STRENGTH', margin + 8, y + 8);
 
   pdf.setFont('helvetica', 'normal');
   pdf.setFontSize(9);
@@ -416,7 +442,7 @@ export function generateFissReportBuffer({ candidateName, candidateCollege, repo
   pdf.setFont('helvetica', 'bold');
   pdf.setFontSize(7.5);
   pdf.setTextColor(217, 119, 6);
-  pdf.text('\u26A0  CRITICAL GAP', margin + 8, y + 8);
+  pdf.text('[!]  CRITICAL GAP', margin + 8, y + 8);
 
   pdf.setFont('helvetica', 'normal');
   pdf.setFontSize(9);
@@ -485,7 +511,7 @@ export function generateFissReportBuffer({ candidateName, candidateCollege, repo
       url: `https://fin-apply-ai.vercel.app/score/${shareId}`,
     });
     pdf.setTextColor(100, 100, 110);
-    pdf.text('  |  Contact: team@finapply.ai', margin + 8 + pdf.getTextWidth(`Verify score: finapply.ai/score/${shareId}`) + 2, y);
+    pdf.text('  |  Contact: chinmay@finapply.ai', margin + 8 + pdf.getTextWidth(`Verify score: finapply.ai/score/${shareId}`) + 2, y);
   } else {
     y += employerH;
   }

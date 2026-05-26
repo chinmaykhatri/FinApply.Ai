@@ -59,6 +59,7 @@ export interface FissReport {
   critical_gap: string;
   evaluator_summary: string;
   employer_summary?: string;
+  confidence_level?: 'HIGH' | 'MEDIUM' | 'LOW';
   created_at: string;
 }
 

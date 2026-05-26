@@ -97,6 +97,14 @@ Flag as ai_generated: true if THREE OR MORE of the following are present:
 ${input.candidate_response}
 </candidate_response>
 
+<scoring_calibration>
+CRITICAL RULES FOR SCORING:
+1. SCORE VARIANCE IS MANDATORY. The four dimension scores (fr_score, st_score, ri_score, dc_score) MUST NOT all be identical. Real analytical performance always shows variance — a candidate might score 25 on Financial Reasoning and 21 on Structured Thinking. If your initial assessment produces identical scores across all four dimensions, re-examine each dimension independently and adjust to reflect genuine differences. A spread of at least 2 points between the highest and lowest dimension is required.
+2. EVIDENCE QUOTES MUST BE REAL SENTENCES. Each evidence field (fr_evidence, st_evidence, ri_evidence, dc_evidence) must be a verbatim sentence or clause from the candidate's actual response that demonstrates analytical thinking. NEVER use section headers, table column names, bullet point labels, or data values as evidence quotes. The quote should reveal HOW the candidate thinks, not WHAT topics they covered. Bad example: "Executive Summary, Comparative Analysis, Dilution Model" — this is a list of section titles. Good example: "The promoter control constraint is the binding factor that eliminates an IPO as a viable option" — this shows reasoning.
+3. EVIDENCE QUOTES MUST BE CLEAN TEXT. Do not include formatting artifacts, special characters, symbols, or encoding issues in evidence quotes. Use only standard ASCII text. Replace any special formatting (arrows, bullets, symbols) with plain English equivalents.
+4. CRITICAL GAP MUST BE UNIQUE. The critical_gap MUST say something substantively different from all four improvement tips (fr_improvement, st_improvement, ri_improvement, dc_improvement). It should identify a cross-cutting analytical limitation — a ceiling on the candidate's current capability — not echo a dimension-specific tip. Example of what NOT to do: if ri_improvement says "propose mitigation strategies for risks", the critical_gap should NOT also be about missing mitigation strategies.
+</scoring_calibration>
+
 <output_format>
 Return exactly this JSON structure. No other text. Valid JSON only.
 
@@ -114,17 +122,19 @@ Return exactly this JSON structure. No other text. Valid JSON only.
   "st_rationale": "[2 sentences. Specific to this response.]",
   "ri_rationale": "[2 sentences. Specific to this response.]",
   "dc_rationale": "[2 sentences. Specific to this response.]",
-  "fr_evidence": "[Direct quote under 20 words from candidate response that most influenced FR score]",
-  "st_evidence": "[Direct quote under 20 words from candidate response that most influenced ST score]",
-  "ri_evidence": "[Direct quote under 20 words from candidate response that most influenced RI score]",
-  "dc_evidence": "[Direct quote under 20 words from candidate response that most influenced DC score]",
+  "fr_evidence": "[Verbatim sentence or clause (under 20 words) from the candidate's response that most influenced FR score. Must be a real analytical sentence — never a section heading, table label, or data value.]",
+  "st_evidence": "[Verbatim sentence or clause (under 20 words) from the candidate's response that most influenced ST score. Must show HOW the candidate connected analytical steps — never a list of section titles.]",
+  "ri_evidence": "[Verbatim sentence or clause (under 20 words) from the candidate's response that most influenced RI score. Must reference actual risk reasoning.]",
+  "dc_evidence": "[Verbatim sentence or clause (under 20 words) from the candidate's response that most influenced DC score. Must show the candidate committing to a position.]",
   "standout_strength": "[2 sentences. The single most impressive thing about this response. Must be specific enough that the candidate recognizes themselves in it. Never generic praise.]",
-  "critical_gap": "[2 sentences. The single most important gap. Framed as a development opportunity. Must be specific — not 'could improve risk analysis' but what specifically was missing and why it matters.]",
+  "critical_gap": "[2 sentences. The single most important analytical CEILING — a cross-cutting limitation that, if fixed, would materially change what this candidate is capable of. Must NOT repeat or rephrase any of the four improvement tips. Focus on what the candidate fundamentally did not do (e.g. stress-test assumptions, model downside scenarios, challenge their own conclusion) rather than what they could add more of.]",
   "fr_improvement": "[1 specific action the candidate can take to improve Financial Reasoning. Concrete, not generic.]",
   "st_improvement": "[1 specific action to improve Structured Thinking.]",
   "ri_improvement": "[1 specific action to improve Risk Identification.]",
   "dc_improvement": "[1 specific action to improve Decision Clarity.]",
   "one_line_summary": "[One sentence that characterizes this candidate's analytical profile. Should be specific enough to distinguish them from every other candidate.]",
+  "confidence_level": "[HIGH|MEDIUM|LOW]",
+  "confidence_reason": "[One sentence explaining the confidence level. HIGH = complete response across all dimensions with clear evidence for every score. MEDIUM = partial response or thin evidence on one dimension. LOW = very short response or evidence insufficient for reliable scoring.]",
   "non_obvious_signal_found": [true|false],
   "non_obvious_signal_note": "[If true: what the candidate said that showed they found it. If false: what they said instead and what they missed.]",
   "employer_summary": "[2 sentences written FOR a hiring manager, not the candidate. Describe this candidate's analytical caliber and readiness level using specific evidence from this Deal Room. Example tone: 'This candidate demonstrated strong pattern recognition in identifying currency risk mechanisms that most junior analysts miss. Their structured approach to DCF assumptions suggests readiness for analyst-level client deliverables with moderate supervision.']",

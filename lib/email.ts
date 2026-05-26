@@ -36,7 +36,7 @@ const DIVIDER = `border:none;border-top:1px solid rgba(255,255,255,0.08);margin:
 const FOOTER = `font-size:11px;color:rgba(255,255,255,0.25);margin-top:8px`;
 const SIGNATURE = `<p style="margin:0;color:#fff;font-size:14px;font-weight:500">Chinmay Khatri</p>
 <p style="margin:2px 0 0;font-size:12px;color:rgba(255,255,255,0.40)">Founder, FinApply.ai</p>
-<p style="margin:2px 0 0;font-size:12px;color:rgba(255,255,255,0.30)">chinmaykhatri495@gmail.com</p>`;
+<p style="margin:2px 0 0;font-size:12px;color:rgba(255,255,255,0.30)">chinmay@finapply.ai</p>`;
 
 /* ══════════════════════════════════════════════
    EMAIL 1 — WELCOME + DEAL ROOM ACCESS

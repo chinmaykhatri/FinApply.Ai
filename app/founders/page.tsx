@@ -135,11 +135,11 @@ export default function FoundersPage() {
                 <ArrowIcon />
               </a>
               <a
-                href="mailto:chinmaykhatri495@gmail.com"
+                href="mailto:chinmay@finapply.ai"
                 className="founders-pill"
               >
                 <MailIcon />
-                <span>chinmaykhatri495@gmail.com</span>
+                <span>chinmay@finapply.ai</span>
                 <ArrowIcon />
               </a>
             </div>

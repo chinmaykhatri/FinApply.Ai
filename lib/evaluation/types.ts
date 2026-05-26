@@ -35,6 +35,9 @@ export interface GeminiEvaluationResult {
   critical_gap: string;
   one_line_summary: string;
 
+  confidence_level: 'HIGH' | 'MEDIUM' | 'LOW';
+  confidence_reason: string;
+
   non_obvious_signal_found: boolean;
   non_obvious_signal_note: string;
 

@@ -103,6 +103,24 @@ export async function runEvaluationPipeline(
     return { success: false, error: 'AI returned invalid JSON' };
   }
 
+  // Sanitize evidence quotes — strip formatting artifacts that break PDF rendering
+  const sanitizeEvidence = (raw: string): string => {
+    if (!raw) return '';
+    return raw
+      .replace(/[\u2018\u2019]/g, "'")   // smart quotes
+      .replace(/[\u201C\u201D]/g, '"')   // smart double quotes
+      .replace(/[\u2013\u2014]/g, '-')   // em/en dashes
+      .replace(/[\u2026]/g, '...')       // ellipsis
+      .replace(/[\u00B7\u2022\u25CF]/g, '-') // bullet chars
+      .replace(/[^\x20-\x7E]/g, '')     // strip any remaining non-ASCII
+      .replace(/\s+/g, ' ')             // collapse whitespace
+      .trim();
+  };
+  evaluation.fr_evidence = sanitizeEvidence(evaluation.fr_evidence);
+  evaluation.st_evidence = sanitizeEvidence(evaluation.st_evidence);
+  evaluation.ri_evidence = sanitizeEvidence(evaluation.ri_evidence);
+  evaluation.dc_evidence = sanitizeEvidence(evaluation.dc_evidence);
+
   // 7. Insert into fiss_reports
   const { data: report, error: insertErr } = await supabase
     .from('fiss_reports')
@@ -143,6 +161,8 @@ export async function runEvaluationPipeline(
       critical_gap: evaluation.critical_gap,
       evaluator_summary: evaluation.one_line_summary,
       employer_summary: evaluation.employer_summary || null,
+      confidence_level: evaluation.confidence_level || 'HIGH',
+      confidence_reason: evaluation.confidence_reason || null,
     })
     .select()
     .single();
@@ -225,6 +245,7 @@ export async function runEvaluationPipeline(
           critical_gap: evaluation.critical_gap,
           evaluator_summary: evaluation.one_line_summary,
           employer_summary: evaluation.employer_summary || undefined,
+          confidence_level: evaluation.confidence_level || 'HIGH',
         },
       });
     } catch (pdfErr) {

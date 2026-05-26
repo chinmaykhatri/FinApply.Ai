@@ -9,6 +9,9 @@ import { trackEvent, EVENTS } from '@/lib/analytics';
 
 type ReportData = Omit<FissReport, 'id' | 'application_id' | 'simulation_id' | 'created_at'>;
 
+const toTitleCase = (s: string): string =>
+  s.replace(/\b\w+/g, (w) => w[0].toUpperCase() + w.slice(1).toLowerCase());
+
 export default function ReportPage() {
   const params = useParams();
   const token = params.token as string;
@@ -22,6 +25,7 @@ export default function ReportPage() {
   const [appId, setAppId] = useState('');
   const [shareId, setShareId] = useState<string | null>(null);
   const [employerSummary, setEmployerSummary] = useState<string | null>(null);
+  const [confidenceLevel, setConfidenceLevel] = useState<string>('HIGH');
   const [linkedInCopied, setLinkedInCopied] = useState(false);
   const [badgeCopied, setBadgeCopied] = useState(false);
 
@@ -64,6 +68,7 @@ export default function ReportPage() {
               employer_summary: r.employer_summary || undefined,
             });
             if (r.employer_summary) setEmployerSummary(r.employer_summary);
+            if (r.confidence_level) setConfidenceLevel(r.confidence_level);
             if (r.loom_url) setLoomUrl(r.loom_url);
             setPhase('ready');
             trackEvent(EVENTS.REPORT_VIEW);
@@ -362,7 +367,7 @@ export default function ReportPage() {
             {candidateName || 'Candidate Report'}
           </h1>
           <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.40)', marginTop: 4 }}>
-            {candidateCollege} · Founding Cohort · Batch 1
+            {toTitleCase(candidateCollege)} · Founding Cohort · Batch 1
           </p>
 
           {/* Live Score Link */}
@@ -422,6 +427,25 @@ export default function ReportPage() {
           >
             &ldquo;{report.evaluator_summary}&rdquo;
           </p>
+        </div>
+
+        {/* Confidence Index */}
+        <div style={{
+          display: 'inline-flex', alignItems: 'center', gap: 8,
+          background: confidenceLevel === 'HIGH' ? 'rgba(22,163,74,0.06)' : confidenceLevel === 'MEDIUM' ? 'rgba(217,119,6,0.06)' : 'rgba(220,38,38,0.06)',
+          border: `1px solid ${confidenceLevel === 'HIGH' ? 'rgba(22,163,74,0.15)' : confidenceLevel === 'MEDIUM' ? 'rgba(217,119,6,0.15)' : 'rgba(220,38,38,0.15)'}`,
+          borderRadius: 100, padding: '6px 16px', marginBottom: 32,
+        }}>
+          <span style={{
+            fontSize: 10, fontWeight: 700, letterSpacing: 1.5,
+            color: confidenceLevel === 'HIGH' ? '#16A34A' : confidenceLevel === 'MEDIUM' ? '#D97706' : '#DC2626',
+          }}>CONFIDENCE: {confidenceLevel}</span>
+          <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.30)' }}>·</span>
+          <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)' }}>
+            {confidenceLevel === 'HIGH' ? 'Full evidence across all dimensions'
+              : confidenceLevel === 'MEDIUM' ? 'Partial evidence on one dimension'
+              : 'Thin response — scores may vary'}
+          </span>
         </div>
 
         {/* Dimensions */}
@@ -580,7 +604,7 @@ export default function ReportPage() {
               </a>
             )}
             <a
-              href="mailto:team@finapply.ai?subject=Candidate%20Inquiry"
+              href="mailto:chinmay@finapply.ai?subject=Candidate%20Inquiry"
               style={{
                 fontSize: 12, fontWeight: 500, color: 'rgba(255,255,255,0.40)',
                 textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4,
