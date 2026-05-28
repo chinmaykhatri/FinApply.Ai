@@ -98,50 +98,59 @@ export async function POST(request: NextRequest) {
       .update({ status: 'submitted', updated_at: new Date().toISOString() })
       .eq('id', application_id);
 
-    // 3. Dispatch evaluation via Inngest (async, step-based)
-    // Each step runs in its own serverless invocation, so no 10s timeout issues.
-    // Report will be ready in ~1-3 minutes and emailed to the candidate.
-    // FALLBACK: If Inngest dispatch fails, run evaluation directly via engine.
-    let inngestOk = false;
+    auditLog('admin.action', {
+      action: 'simulation_submitted',
+      application_id,
+      simulation_id: sim.id,
+    }, request);
+
+    // ══════════════════════════════════════════════════════════════
+    // 3. AUTO-EVALUATE — runs the full pipeline automatically:
+    //    Gemini AI scoring → save FISS report → generate PDF → email
+    //
+    //    Strategy: Try Inngest first (reliable, step-based, retries).
+    //    If Inngest fails, run the evaluation engine directly.
+    //    We AWAIT the result so Vercel keeps the function alive.
+    //    maxDuration=120s gives plenty of time for Gemini + email.
+    //    The client-side already shows "Submitted" so no UX delay.
+    // ══════════════════════════════════════════════════════════════
+
+    // ── Attempt 1: Inngest (preferred) ──
+    let dispatched = false;
     try {
       await inngest.send({
         name: 'app/submission.completed',
         data: { application_id, simulation_id: sim.id },
       });
-      inngestOk = true;
-      console.log(`[SUBMIT] Evaluation dispatched via Inngest for app=${application_id}`);
+      dispatched = true;
+      console.log(`[SUBMIT] ✅ Inngest evaluation dispatched for app=${application_id}`);
     } catch (inngestErr) {
-      console.error('[SUBMIT] Inngest dispatch failed, falling back to direct eval:', inngestErr);
+      console.error('[SUBMIT] ⚠️ Inngest dispatch failed:', inngestErr instanceof Error ? inngestErr.message : inngestErr);
     }
 
-    // If Inngest failed, run evaluation directly (self-healing)
-    if (!inngestOk) {
+    // ── Attempt 2: Direct evaluation (fallback if Inngest unavailable) ──
+    if (!dispatched) {
       try {
-        // Dynamic import to avoid loading the engine unless needed
         const { runEvaluationPipeline } = await import('@/lib/evaluation/engine');
-        console.log(`[SUBMIT] Running direct evaluation fallback for app=${application_id}`);
+        console.log(`[SUBMIT] 🔄 Running direct evaluation for app=${application_id}`);
         const evalResult = await runEvaluationPipeline(application_id, sim.id);
-        if (!evalResult.success) {
-          console.error('[SUBMIT] Direct eval also failed:', evalResult.error);
+        if (evalResult.success) {
+          console.log(`[SUBMIT] ✅ Direct evaluation completed for app=${application_id}, score=${(evalResult.report as Record<string, unknown>)?.total_score ?? '?'}`);
+        } else {
+          console.error(`[SUBMIT] ❌ Direct evaluation failed for app=${application_id}:`, evalResult.error);
           await supabase
             .from('applications')
             .update({ status: 'eval_failed', updated_at: new Date().toISOString() })
             .eq('id', application_id);
         }
       } catch (directErr) {
-        console.error('[SUBMIT] Direct eval fallback error:', directErr);
+        console.error(`[SUBMIT] ❌ Direct evaluation crashed for app=${application_id}:`, directErr instanceof Error ? directErr.message : directErr);
         await supabase
           .from('applications')
           .update({ status: 'eval_failed', updated_at: new Date().toISOString() })
           .eq('id', application_id);
       }
     }
-
-    auditLog('admin.action', {
-      action: 'simulation_submitted',
-      application_id,
-      simulation_id: sim.id,
-    }, request);
 
     return NextResponse.json({ success: true, data: { id: sim.id } }, { status: 201 });
   } catch {
