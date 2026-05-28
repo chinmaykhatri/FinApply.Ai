@@ -663,13 +663,23 @@ export default function DealRoomPage() {
             Your analysis has been submitted. You wrote <strong style={{ color: '#fff' }}>{wordCount} words</strong> in{' '}
             <strong style={{ color: '#fff' }}>{Math.round((TOTAL_TIME - timeLeft) / 60)} minutes</strong>.
           </p>
-          <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.40)', marginTop: 24 }}>
-            Your FISS Score Report will be delivered to your email — typically within a few hours.
-          </p>
+
+          {/* Auto-evaluation notice */}
+          <div style={{
+            marginTop: 28, padding: '16px 20px', borderRadius: 14,
+            background: 'rgba(22,163,74,0.06)', border: '1px solid rgba(22,163,74,0.15)',
+            textAlign: 'left',
+          }}>
+            <p style={{ fontSize: 13, fontWeight: 600, color: '#16A34A', marginBottom: 6 }}>🚀 Your FISS Score is being generated now</p>
+            <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.50)', lineHeight: 1.5, margin: 0 }}>
+              Our AI is evaluating your response right now. Your FISS Report will be emailed to you within <strong style={{ color: 'rgba(255,255,255,0.70)' }}>1-3 minutes</strong>.
+              Check your dashboard to see your score as soon as it&apos;s ready.
+            </p>
+          </div>
 
           {/* Improvement hint */}
           <div style={{
-            marginTop: 28, padding: '16px 20px', borderRadius: 14,
+            marginTop: 12, padding: '16px 20px', borderRadius: 14,
             background: 'rgba(37,99,235,0.06)', border: '1px solid rgba(37,99,235,0.15)',
             textAlign: 'left',
           }}>
@@ -684,8 +694,8 @@ export default function DealRoomPage() {
             <PillButton variant="secondary" href="/">
               Return to FinApply.ai
             </PillButton>
-            <PillButton variant="primary" href="/dashboard">
-              Go to Dashboard →
+            <PillButton variant="primary" href="/my-score">
+              View My Dashboard →
             </PillButton>
           </div>
         </div>

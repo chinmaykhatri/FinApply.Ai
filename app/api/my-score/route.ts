@@ -56,17 +56,27 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid or expired link' }, { status: 404 });
     }
 
-    // Only serve when report exists
-    const reportReadyStatuses = ['scored', 'report_sent'];
-    if (!reportReadyStatuses.includes(app.status)) {
-      return NextResponse.json({ error: 'Report not yet available' }, { status: 403 });
-    }
-
-    // Strip email from response (privacy — this is the candidate's own page
-    // but the token is the auth, no need to leak email in API response)
+    // Strip email from response (privacy)
     const { email: _email, ...safeApp } = app;
 
-    return NextResponse.json({ data: safeApp });
+    // If report is ready, return full data
+    const reportReadyStatuses = ['scored', 'report_sent'];
+    if (reportReadyStatuses.includes(app.status)) {
+      return NextResponse.json({ data: safeApp });
+    }
+
+    // If submitted or eval_failed, return data with status so frontend can show retry UI
+    const pendingStatuses = ['submitted', 'eval_failed'];
+    if (pendingStatuses.includes(app.status)) {
+      return NextResponse.json({
+        data: safeApp,
+        pending: true,
+        status: app.status,
+      });
+    }
+
+    // Any other status — not accessible
+    return NextResponse.json({ error: 'Report not yet available' }, { status: 403 });
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

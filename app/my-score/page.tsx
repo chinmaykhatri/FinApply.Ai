@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useRef, Suspense } from 'react';
+import React, { useEffect, useState, useRef, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import DimensionCard from '@/components/ui/DimensionCard';
@@ -54,12 +54,31 @@ function formatDate(iso: string) {
 function MyScoreInner() {
   const searchParams = useSearchParams();
   const [data, setData] = useState<DashboardData | null>(null);
-  const [phase, setPhase] = useState<'loading' | 'invalid' | 'ready'>('loading');
+  const [phase, setPhase] = useState<'loading' | 'invalid' | 'pending' | 'ready'>('loading');
+  const [appStatus, setAppStatus] = useState<string>('');
+  const [retrying, setRetrying] = useState(false);
+  const [retryError, setRetryError] = useState('');
   const [copyLink, setCopyLink] = useState(false);
   const [copyPost, setCopyPost] = useState(false);
   const [copyBadge, setCopyBadge] = useState(false);
   const ringRef = useRef<SVGCircleElement>(null);
   const barsRef = useRef<HTMLDivElement>(null);
+  const tokenRef = useRef<string>('');
+
+  const loadData = useCallback(async (t: string) => {
+    try {
+      const res = await fetch(`/api/my-score?token=${t}`);
+      if (!res.ok) { setPhase('invalid'); return; }
+      const json = await res.json();
+      setData(json.data);
+      if (json.pending) {
+        setAppStatus(json.status || 'submitted');
+        setPhase('pending');
+      } else {
+        setPhase('ready');
+      }
+    } catch { setPhase('invalid'); }
+  }, []);
 
   useEffect(() => {
     // Token: URL param first, then localStorage
@@ -70,18 +89,55 @@ function MyScoreInner() {
       token = localStorage.getItem('fa_token');
     }
     if (!token) { setPhase('invalid'); return; }
+    tokenRef.current = token;
+    loadData(token);
+  }, [searchParams, loadData]);
 
-    async function load(t: string) {
-      try {
-        const res = await fetch(`/api/my-score?token=${t}`);
-        if (!res.ok) { setPhase('invalid'); return; }
-        const json = await res.json();
-        setData(json.data);
-        setPhase('ready');
-      } catch { setPhase('invalid'); }
+  // ── Retry evaluation handler ──
+  const handleRetryEvaluation = async () => {
+    if (!data?.id || retrying) return;
+    setRetrying(true);
+    setRetryError('');
+
+    try {
+      const res = await fetch('/api/evaluate-retry', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          application_id: data.id,
+          email: '', // We use deal_room_token approach below, but as fallback
+        }),
+      });
+
+      const json = await res.json();
+
+      if (json.success) {
+        // Evaluation succeeded — reload dashboard data
+        const token = tokenRef.current;
+        if (token) {
+          // Small delay to let DB propagate
+          await new Promise(r => setTimeout(r, 1500));
+          await loadData(token);
+        }
+      } else {
+        setRetryError(json.error || 'Evaluation failed. Please try again in a moment.');
+      }
+    } catch {
+      setRetryError('Network error. Please check your connection and try again.');
+    } finally {
+      setRetrying(false);
     }
-    load(token);
-  }, [searchParams]);
+  };
+
+  // ── Auto-poll when pending (check every 30s if report is ready) ──
+  useEffect(() => {
+    if (phase !== 'pending') return;
+    const interval = setInterval(() => {
+      const token = tokenRef.current;
+      if (token) loadData(token);
+    }, 30_000); // Check every 30 seconds
+    return () => clearInterval(interval);
+  }, [phase, loadData]);
 
   // Animate ring
   useEffect(() => {
@@ -143,6 +199,165 @@ function MyScoreInner() {
             </Link>
           </div>
         </div>
+      </div>
+    );
+  }
+
+  // ── Pending / Eval Failed — Show retry button ──
+  if (phase === 'pending') {
+    const sim = data.simulations?.[0];
+    const firstName = data.full_name.split(' ')[0];
+    const isFailed = appStatus === 'eval_failed';
+
+    return (
+      <div style={{ minHeight: '100vh', background: '#000' }}>
+        {/* Navbar */}
+        <nav style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 24px', maxWidth: 760, margin: '0 auto', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+          <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
+            <div style={{ width: 32, height: 32, borderRadius: 8, background: '#2563EB', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 700, color: '#fff' }}>F</div>
+            <span style={{ fontSize: 16, fontWeight: 600, color: '#fff', letterSpacing: -0.3 }}>FinApply.ai</span>
+          </Link>
+          <Link href="/" style={{ fontSize: 13, color: 'rgba(255,255,255,0.50)', textDecoration: 'none' }}>Back to Home</Link>
+        </nav>
+
+        <main style={{ maxWidth: 560, margin: '0 auto', padding: '80px 24px', textAlign: 'center' }}>
+          {/* Status icon */}
+          <div style={{
+            width: 80, height: 80, borderRadius: 20, margin: '0 auto 32px',
+            background: isFailed
+              ? 'linear-gradient(135deg, rgba(239,68,68,0.12), rgba(220,38,38,0.12))'
+              : 'linear-gradient(135deg, rgba(37,99,235,0.12), rgba(139,92,246,0.12))',
+            border: `1px solid ${isFailed ? 'rgba(239,68,68,0.20)' : 'rgba(37,99,235,0.20)'}`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 36,
+          }}>
+            {isFailed ? '⚠️' : '⏳'}
+          </div>
+
+          {/* Heading */}
+          <h1 style={{ fontSize: 28, fontWeight: 600, color: '#fff', margin: '0 0 12px', lineHeight: 1.3 }}>
+            {isFailed
+              ? `${firstName}, your evaluation needs a retry`
+              : `${firstName}, your report is being generated`}
+          </h1>
+          <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.55)', lineHeight: 1.6, margin: '0 0 40px' }}>
+            {isFailed
+              ? 'The AI evaluation encountered an issue. Click below to generate your FISS Score — it takes about 1-2 minutes.'
+              : 'Your submission is being evaluated by our AI engine. This usually takes 1-2 minutes. This page will automatically refresh when ready.'}
+          </p>
+
+          {/* Submission details card */}
+          {sim && (
+            <div style={{
+              background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
+              borderRadius: 16, padding: 24, marginBottom: 32, textAlign: 'left',
+            }}>
+              <p style={{ fontSize: 11, fontWeight: 500, color: 'rgba(255,255,255,0.30)', letterSpacing: 2, marginBottom: 16 }}>YOUR SUBMISSION</p>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                {[
+                  { label: 'Case', value: sim.case_code || '—' },
+                  { label: 'Words', value: `${sim.word_count} words` },
+                  { label: 'Time Used', value: `${Math.round(sim.time_taken_seconds / 60)} minutes` },
+                  { label: 'Submitted', value: formatDate(sim.submitted_at) },
+                ].map((item) => (
+                  <div key={item.label}>
+                    <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', margin: '0 0 4px' }}>{item.label}</p>
+                    <p style={{ fontSize: 14, color: '#fff', fontWeight: 500, margin: 0 }}>{item.value}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Retry button (show for eval_failed, or as fallback if pending too long) */}
+          {isFailed ? (
+            <div>
+              <button
+                onClick={handleRetryEvaluation}
+                disabled={retrying}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 10,
+                  padding: '14px 32px', borderRadius: 100,
+                  fontSize: 15, fontWeight: 600,
+                  cursor: retrying ? 'not-allowed' : 'pointer',
+                  background: retrying ? 'rgba(37,99,235,0.30)' : '#2563EB',
+                  border: 'none', color: '#fff',
+                  transition: 'all 200ms ease',
+                  opacity: retrying ? 0.7 : 1,
+                }}
+              >
+                {retrying ? (
+                  <>
+                    <div className="spinner" style={{ width: 18, height: 18, borderWidth: 2 }} />
+                    Evaluating... (1-2 min)
+                  </>
+                ) : (
+                  '🚀 Generate My FISS Score'
+                )}
+              </button>
+
+              {retryError && (
+                <div style={{
+                  marginTop: 16, padding: '12px 20px', borderRadius: 12,
+                  background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.20)',
+                }}>
+                  <p style={{ fontSize: 13, color: '#EF4444', margin: 0 }}>{retryError}</p>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div>
+              {/* Pulsing dots for "processing" state */}
+              <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginBottom: 20 }}>
+                {[0, 1, 2].map((i) => (
+                  <div key={i} style={{
+                    width: 8, height: 8, borderRadius: '50%', background: '#2563EB',
+                    animation: `pulse-dot 1.4s ease-in-out ${i * 0.2}s infinite`,
+                  }} />
+                ))}
+              </div>
+              <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)' }}>
+                Auto-refreshing every 30 seconds...
+              </p>
+              {/* Also show retry button as fallback after some time */}
+              <button
+                onClick={handleRetryEvaluation}
+                disabled={retrying}
+                style={{
+                  marginTop: 24, display: 'inline-flex', alignItems: 'center', gap: 8,
+                  padding: '10px 24px', borderRadius: 100,
+                  fontSize: 13, fontWeight: 500,
+                  cursor: retrying ? 'not-allowed' : 'pointer',
+                  background: 'transparent',
+                  border: '1px solid rgba(255,255,255,0.15)',
+                  color: 'rgba(255,255,255,0.60)',
+                  transition: 'all 200ms ease',
+                }}
+              >
+                {retrying ? 'Evaluating...' : 'Not ready yet? Click to retry'}
+              </button>
+            </div>
+          )}
+
+          {/* Status pill */}
+          <div style={{ marginTop: 32 }}>
+            <span style={{
+              fontSize: 11, fontWeight: 500, padding: '4px 14px', borderRadius: 100,
+              background: isFailed ? 'rgba(239,68,68,0.10)' : 'rgba(37,99,235,0.10)',
+              border: `1px solid ${isFailed ? 'rgba(239,68,68,0.20)' : 'rgba(37,99,235,0.20)'}`,
+              color: isFailed ? '#EF4444' : '#2563EB',
+            }}>
+              Status: {isFailed ? 'Evaluation Failed' : 'Processing'}
+            </span>
+          </div>
+        </main>
+
+        <style jsx>{`
+          @keyframes pulse-dot {
+            0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
+            40% { opacity: 1; transform: scale(1.2); }
+          }
+        `}</style>
       </div>
     );
   }

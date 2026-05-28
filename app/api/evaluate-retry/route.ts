@@ -28,39 +28,52 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const { email, application_id } = await request.json();
-
-    if (!email || !isValidEmail(email)) {
-      return NextResponse.json({ error: 'Valid email is required' }, { status: 400 });
-    }
+    const body = await request.json();
+    const { email, application_id, deal_room_token } = body;
 
     if (!application_id) {
       return NextResponse.json({ error: 'Missing application_id' }, { status: 400 });
     }
 
-    const normalizedEmail = sanitizeString(email, 254).toLowerCase();
+    // Must provide at least one auth method
+    if (!email && !deal_room_token) {
+      return NextResponse.json({ error: 'Email or deal_room_token required' }, { status: 400 });
+    }
+
     const supabase = createAdminClient();
 
-    // 1. Verify email ownership — the email must match the application
-    const { data: app, error: appErr } = await supabase
+    // 1. Verify ownership — via email match OR deal_room_token match
+    let query = supabase
       .from('applications')
       .select('id, email, status')
-      .eq('id', application_id)
-      .single();
+      .eq('id', application_id);
+
+    if (deal_room_token) {
+      // Auth via deal_room_token (used by dealroom submitted page)
+      query = query.eq('deal_room_token', deal_room_token);
+    }
+
+    const { data: app, error: appErr } = await query.single();
 
     if (appErr || !app) {
       return NextResponse.json({ error: 'Application not found' }, { status: 404 });
     }
 
-    // SECURITY: Only the application owner can retry
-    if (app.email.toLowerCase() !== normalizedEmail) {
-      auditLog('api.suspicious', {
-        endpoint: '/api/evaluate-retry',
-        reason: 'Email mismatch on retry attempt',
-        claimed_email: normalizedEmail,
-        application_id,
-      }, request);
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    // If email was provided (not deal_room_token), verify email matches
+    if (email && !deal_room_token) {
+      const normalizedEmail = sanitizeString(email, 254).toLowerCase();
+      if (!isValidEmail(normalizedEmail)) {
+        return NextResponse.json({ error: 'Valid email is required' }, { status: 400 });
+      }
+      if (app.email.toLowerCase() !== normalizedEmail) {
+        auditLog('api.suspicious', {
+          endpoint: '/api/evaluate-retry',
+          reason: 'Email mismatch on retry attempt',
+          claimed_email: normalizedEmail,
+          application_id,
+        }, request);
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+      }
     }
 
     // Only retry if stuck in submitted or eval_failed status
@@ -119,7 +132,7 @@ export async function POST(request: NextRequest) {
 
     auditLog('admin.action', {
       action: 'self_healing_eval_retry',
-      email: normalizedEmail,
+      email: app.email,
       application_id,
       simulation_id: sim.id,
       eval_success: result.success,
