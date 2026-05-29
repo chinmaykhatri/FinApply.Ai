@@ -1,6 +1,7 @@
 /* ═══════════════════════════════════════════════
    Case Library Index — FinApply.ai
-   35 cases across 5 role tracks
+   75 cases across 5 role tracks (15 per track)
+   7 Intermediate/Advanced + 8 Expert per track
    ═══════════════════════════════════════════════ */
 
 export type { DealCase, CaseFinancials, AdminOnly, RoleTrack } from './types';

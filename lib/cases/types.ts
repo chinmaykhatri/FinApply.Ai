@@ -16,7 +16,7 @@ export interface AdminOnly {
 export interface DealCase {
   code: string;
   role: string;
-  difficulty: 'Intermediate' | 'Advanced';
+  difficulty: 'Intermediate' | 'Advanced' | 'Expert';
   title: string;
   situation: string;
   company_overview: string;
