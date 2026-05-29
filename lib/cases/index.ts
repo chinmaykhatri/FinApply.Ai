@@ -25,16 +25,25 @@ export const CASE_LIBRARY: Record<RoleTrack, DealCase[]> = {
 
 /**
  * Map a target_role string from the application to a RoleTrack key.
- * Handles partial matches and common variations.
+ * Handles both DB enum values (ib_analyst, pe_analyst, etc.) and
+ * human-readable labels (Investment Banking Analyst, etc.).
  */
 export function resolveRoleTrack(targetRole: string): RoleTrack {
   const normalized = targetRole.toLowerCase().trim();
 
-  if (normalized.includes('investment banking') || normalized.includes('ib')) return 'IB';
-  if (normalized.includes('private equity') || normalized.includes('pe')) return 'PE';
-  if (normalized.includes('big 4') || normalized.includes('advisory') || normalized.includes('audit') || normalized.includes('b4')) return 'B4';
-  if (normalized.includes('corporate finance') || normalized.includes('cf') || normalized.includes('treasury') || normalized.includes('fp&a')) return 'CF';
-  if (normalized.includes('equity research') || normalized.includes('er') || normalized.includes('credit research')) return 'ER';
+  // DB enum values (exact match, fastest path)
+  if (normalized === 'ib_analyst') return 'IB';
+  if (normalized === 'pe_analyst') return 'PE';
+  if (normalized === 'big4_advisory') return 'B4';
+  if (normalized === 'equity_research') return 'ER';
+  if (normalized === 'corporate_finance') return 'CF';
+
+  // Human-readable / partial matches
+  if (normalized.includes('investment banking') || normalized === 'ib') return 'IB';
+  if (normalized.includes('private equity') || normalized === 'pe') return 'PE';
+  if (normalized.includes('big 4') || normalized.includes('advisory') || normalized.includes('audit') || normalized === 'b4') return 'B4';
+  if (normalized.includes('corporate finance') || normalized.includes('treasury') || normalized.includes('fp&a') || normalized === 'cf') return 'CF';
+  if (normalized.includes('equity research') || normalized.includes('credit research') || normalized === 'er') return 'ER';
 
   // Default to IB if role is unrecognised
   return 'IB';
