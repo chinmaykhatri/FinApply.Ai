@@ -43,7 +43,7 @@ export async function runEvaluationPipeline(
   // 1. Fetch simulation content
   const { data: sim, error: simErr } = await supabase
     .from('simulations')
-    .select('id, application_id, case_code, content, word_count, time_taken_seconds, started_at, submitted_at, tab_violations, paste_count, large_paste_count, typing_bursts, integrity_score')
+    .select('id, application_id, case_code, case_instance_id, case_variables, content, word_count, time_taken_seconds, started_at, submitted_at, tab_violations, paste_count, large_paste_count, typing_bursts, integrity_score')
     .eq('id', simulation_id)
     .single();
 
@@ -67,7 +67,8 @@ export async function runEvaluationPipeline(
   const dealCase = getCaseByCode(caseCode);
   const roleTrack = resolveRoleTrack(app.target_role);
 
-  // 4. Build the prompt
+  // 4. Build the prompt (include instance variables if candidate got a dynamic case)
+  const caseVars = sim.case_variables as Record<string, number> | null;
   const prompt = buildEvaluationPrompt({
     case_code: caseCode,
     role_track: roleTrack,
@@ -76,6 +77,7 @@ export async function runEvaluationPipeline(
     admin_critical_gap: dealCase?.admin_only?.critical_gap || 'N/A',
     non_obvious: dealCase?.admin_only?.non_obvious_signal || 'N/A',
     candidate_response: sim.content,
+    case_variables: caseVars || undefined,
   });
 
   // 5. Call Gemini 2.5 Flash — temperature 0.1 for scoring consistency

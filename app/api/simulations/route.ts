@@ -18,7 +18,8 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     const {
-      application_id, deal_room_token, case_code, content, word_count,
+      application_id, deal_room_token, case_code, case_instance_id, case_variables,
+      content, word_count,
       time_taken_seconds, started_at, tab_violations, violation_log,
       paste_count, large_paste_count, typing_bursts,
     } = body;
@@ -72,6 +73,8 @@ export async function POST(request: NextRequest) {
       .insert({
         application_id,
         case_code: sanitizeString(case_code, 20) || null,
+        case_instance_id: case_instance_id ? sanitizeString(String(case_instance_id), 60) : null,
+        case_variables: case_variables && typeof case_variables === 'object' ? case_variables : null,
         content: sanitizedContent,
         word_count: Math.min(Math.max(0, Number(word_count) || 0), 100_000),
         time_taken_seconds: Math.min(Math.max(0, Number(time_taken_seconds) || 0), 86_400),

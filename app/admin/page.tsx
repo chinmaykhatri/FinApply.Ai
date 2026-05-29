@@ -7,6 +7,8 @@ import StatusBadge from '@/components/ui/StatusBadge';
 import Modal from '@/components/ui/Modal';
 import type { ApplicationStatus, DimensionScore } from '@/lib/types';
 import FinApplyLogo from '@/components/ui/FinApplyLogo';
+import CaseAnalytics from '@/components/admin/CaseAnalytics';
+import CaseLibraryTab from '@/components/admin/CaseLibraryTab';
 
 interface FissReportData {
   id: string;
@@ -62,6 +64,7 @@ export default function AdminDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [batchEvaluating, setBatchEvaluating] = useState(false);
+  const [adminTab, setAdminTab] = useState<'candidates' | 'cases' | 'library'>('candidates');
 
   // Override form state
   const [overrideData, setOverrideData] = useState({
@@ -443,9 +446,42 @@ export default function AdminDashboard() {
 
       {/* Content */}
       <div style={{ padding: '40px 60px' }}>
-        <h1 style={{ fontSize: 28, fontWeight: 600, color: '#fff', marginBottom: 32 }}>
-          Candidate Dashboard
+        <h1 style={{ fontSize: 28, fontWeight: 600, color: '#fff', marginBottom: 24 }}>
+          Admin Dashboard
         </h1>
+
+        {/* Tab Navigation */}
+        <div style={{ display: 'flex', gap: 4, marginBottom: 32, borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: 0 }}>
+          {[
+            { key: 'candidates' as const, label: 'Candidates', icon: '👤' },
+            { key: 'cases' as const, label: 'Case Analytics', icon: '📊' },
+            { key: 'library' as const, label: 'Case Library', icon: '📚' },
+          ].map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setAdminTab(tab.key)}
+              style={{
+                fontSize: 13, fontWeight: 500, padding: '10px 20px',
+                background: adminTab === tab.key ? 'rgba(37,99,235,0.10)' : 'transparent',
+                border: 'none',
+                borderBottom: adminTab === tab.key ? '2px solid #2563EB' : '2px solid transparent',
+                color: adminTab === tab.key ? '#2563EB' : 'rgba(255,255,255,0.40)',
+                cursor: 'pointer', transition: 'all 200ms ease',
+              }}
+            >
+              {tab.icon} {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Cases Tab */}
+        {adminTab === 'cases' && <CaseAnalytics />}
+
+        {/* Library Tab */}
+        {adminTab === 'library' && <CaseLibraryTab />}
+
+        {/* Candidates Tab */}
+        {adminTab === 'candidates' && (<>
 
         {/* Metrics */}
         <div style={{ display: 'flex', gap: 16, marginBottom: 24, flexWrap: 'wrap' }}>
@@ -736,6 +772,7 @@ export default function AdminDashboard() {
             ))
           )}
         </div>
+        </>)}
       </div>
 
       {/* Override Modal */}

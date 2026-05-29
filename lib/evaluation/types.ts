@@ -61,6 +61,8 @@ export interface EvaluationInput {
   admin_critical_gap: string;
   non_obvious: string;
   candidate_response: string;
+  /** Dynamic case variables — the specific numbers this candidate received */
+  case_variables?: Record<string, number>;
 }
 
 /** Role-specific weight calibration text */

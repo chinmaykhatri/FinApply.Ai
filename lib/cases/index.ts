@@ -2,10 +2,16 @@
    Case Library Index — FinApply.ai
    75 cases across 5 role tracks (15 per track)
    7 Intermediate/Advanced + 8 Expert per track
+   
+   Dynamic variable system: cases with variable
+   definitions produce unique number instances
+   per candidate. Static cases pass through as-is.
    ═══════════════════════════════════════════════ */
 
 export type { DealCase, CaseFinancials, AdminOnly, RoleTrack } from './types';
 export { ROLE_MAP } from './types';
+export type { CaseInstance } from './instance';
+export { generateCaseInstance } from './instance';
 
 import { IB_CASES } from './ib';
 import { PE_CASES } from './pe';
@@ -13,6 +19,8 @@ import { B4_CASES } from './b4';
 import { CF_CASES } from './cf';
 import { ER_CASES } from './er';
 import type { DealCase, RoleTrack } from './types';
+import type { CaseInstance } from './instance';
+import { generateCaseInstance } from './instance';
 
 /** Full case library indexed by role track */
 export const CASE_LIBRARY: Record<RoleTrack, DealCase[]> = {
@@ -50,17 +58,21 @@ export function resolveRoleTrack(targetRole: string): RoleTrack {
 }
 
 /**
- * Randomly assign one case from the candidate's role track.
- * Pure random — every visit gets a fresh, unpredictable case.
+ * Randomly assign one case from the candidate's role track
+ * and generate a unique variable instance.
+ * 
+ * Returns a CaseInstance with hydrated text (placeholders replaced
+ * with random numbers) and the generated variable map for storage.
  */
-export function assignCase(targetRole: string): DealCase {
+export function assignCase(targetRole: string): CaseInstance {
   const track = resolveRoleTrack(targetRole);
   const cases = CASE_LIBRARY[track];
   const index = Math.floor(Math.random() * cases.length);
-  return cases[index];
+  const selected = cases[index];
+  return generateCaseInstance(selected);
 }
 
-/** Get a specific case by its code (e.g. 'IB-003') */
+/** Get a specific case by its code (e.g. 'IB-003') — returns static template */
 export function getCaseByCode(code: string): DealCase | undefined {
   const allCases = [
     ...IB_CASES,

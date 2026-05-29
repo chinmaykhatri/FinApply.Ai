@@ -31,7 +31,13 @@ Strong response looks like: ${input.admin_strong}
 Critical Gap looks like: ${input.admin_critical_gap}
 Non-obvious signal to look for: ${input.non_obvious}
 </case_context>
-
+${input.case_variables && Object.keys(input.case_variables).length > 0 ? `
+<case_instance_variables>
+CASE INSTANCE VARIABLES:
+These are the specific financial figures this candidate received. Their case was generated with unique numbers — use these to verify calculation accuracy. If the candidate references different numbers, they may have fabricated data.
+${JSON.stringify(input.case_variables, null, 2)}
+</case_instance_variables>
+` : ''}
 <role_weight_calibration>
 For ${input.role_track}, apply these emphasis weights when the response is borderline between bands:
 ${roleWeight}

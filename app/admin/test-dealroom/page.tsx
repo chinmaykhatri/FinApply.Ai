@@ -68,8 +68,8 @@ function AdminTestDealRoom() {
         const json = await res.json();
         if (res.ok && json.data) {
           targetRoleRef.current = json.data.target_role;
-          const assigned = assignCase(json.data.target_role);
-          setActiveCase(assigned);
+          const instance = assignCase(json.data.target_role);
+          setActiveCase(instance.hydrated_case);
           setPhase('instructions');
         } else {
           setPhase('unauthorized');
@@ -110,8 +110,8 @@ function AdminTestDealRoom() {
   };
 
   const handleChangeCase = () => {
-    const newCase = assignCase(targetRoleRef.current);
-    setActiveCase(newCase);
+    const instance = assignCase(targetRoleRef.current);
+    setActiveCase(instance.hydrated_case);
     setContent('');
     setCaseChangeUsed(true);
     setShowChangeCaseModal(false);

@@ -4,7 +4,7 @@ import { useParams, useRouter } from 'next/navigation';
 import PillButton from '@/components/ui/PillButton';
 import Modal from '@/components/ui/Modal';
 import { assignCase } from '@/lib/cases';
-import type { DealCase } from '@/lib/cases';
+import type { DealCase, CaseInstance } from '@/lib/cases';
 import { trackEvent, EVENTS } from '@/lib/analytics';
 
 const TOTAL_TIME = 45 * 60; // 45 minutes in seconds
@@ -44,6 +44,8 @@ export default function DealRoomPage() {
   const [applicationId, setApplicationId] = useState<string>('');
   const [candidateName, setCandidateName] = useState<string>('');
   const [activeCase, setActiveCase] = useState<DealCase | null>(null);
+  const [caseInstanceId, setCaseInstanceId] = useState<string>('');
+  const [caseVariables, setCaseVariables] = useState<Record<string, number>>({});
   const [timeLeft, setTimeLeft] = useState(TOTAL_TIME);
   const [content, setContent] = useState('');
   const [showSubmitModal, setShowSubmitModal] = useState(false);
@@ -91,8 +93,10 @@ export default function DealRoomPage() {
           // Store target role and assign a random case from that track
           const targetRole = json.data.target_role || 'Investment Banking Analyst';
           targetRoleRef.current = targetRole;
-          const assigned = assignCase(targetRole);
-          setActiveCase(assigned);
+          const instance = assignCase(targetRole);
+          setActiveCase(instance.hydrated_case);
+          setCaseInstanceId(instance.instance_id);
+          setCaseVariables(instance.generated_variables);
 
           // Check if already submitted
           if (json.data.simulations && json.data.simulations.length > 0) {
@@ -335,8 +339,10 @@ export default function DealRoomPage() {
   };
 
   const handleChangeCase = () => {
-    const newCase = assignCase(targetRoleRef.current);
-    setActiveCase(newCase);
+    const instance = assignCase(targetRoleRef.current);
+    setActiveCase(instance.hydrated_case);
+    setCaseInstanceId(instance.instance_id);
+    setCaseVariables(instance.generated_variables);
     setContent('');
     setCaseChangeUsed(true);
     setShowChangeCaseModal(false);
@@ -360,6 +366,8 @@ export default function DealRoomPage() {
             application_id: applicationId,
             deal_room_token: token,
             case_code: activeCase?.code || 'UNKNOWN',
+            case_instance_id: caseInstanceId,
+            case_variables: caseVariables,
             content,
             word_count: wordCount,
             time_taken_seconds: TOTAL_TIME - timeLeft,
@@ -401,7 +409,7 @@ export default function DealRoomPage() {
     setPhase('submitted');
     trackEvent(EVENTS.DEALROOM_SUBMIT, { word_count: wordCount });
     setSubmitting(false);
-  }, [content, wordCount, timeLeft, applicationId, token, activeCase, tabViolations, webcamStream, pasteCount, largePasteCount, typingBursts]);
+  }, [content, wordCount, timeLeft, applicationId, token, activeCase, tabViolations, webcamStream, pasteCount, largePasteCount, typingBursts, caseInstanceId, caseVariables]);
 
   // Keep autoSubmitRef in sync for proctoring hooks
   autoSubmitRef.current = handleAutoSubmit;
