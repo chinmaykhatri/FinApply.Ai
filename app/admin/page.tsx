@@ -64,7 +64,9 @@ export default function AdminDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [batchEvaluating, setBatchEvaluating] = useState(false);
-  const [adminTab, setAdminTab] = useState<'candidates' | 'cases' | 'library'>('candidates');
+  const [adminTab, setAdminTab] = useState<'candidates' | 'cases' | 'library' | 'cohort'>('candidates');
+  const [cohortLoading, setCohortLoading] = useState(false);
+  const [cohortData, setCohortData] = useState<Record<string, unknown> | null>(null);
 
   // Override form state
   const [overrideData, setOverrideData] = useState({
@@ -456,6 +458,7 @@ export default function AdminDashboard() {
             { key: 'candidates' as const, label: 'Candidates', icon: '👤' },
             { key: 'cases' as const, label: 'Case Analytics', icon: '📊' },
             { key: 'library' as const, label: 'Case Library', icon: '📚' },
+            { key: 'cohort' as const, label: 'Cohort Insights', icon: '📈' },
           ].map((tab) => (
             <button
               key={tab.key}
@@ -479,6 +482,49 @@ export default function AdminDashboard() {
 
         {/* Library Tab */}
         {adminTab === 'library' && <CaseLibraryTab />}
+
+        {/* Cohort Insights Tab */}
+        {adminTab === 'cohort' && (
+          <div style={{ maxWidth: 600 }}>
+            <h2 style={{ fontSize: 20, fontWeight: 600, color: '#fff', marginBottom: 8 }}>Monthly Cohort Insights</h2>
+            <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.50)', marginBottom: 20, lineHeight: 1.6 }}>
+              Generate aggregate insights from last month&apos;s FISS completions. Requires 10+ candidates.
+            </p>
+            <button
+              onClick={async () => {
+                setCohortLoading(true);
+                try {
+                  const res = await fetch('/api/admin/cohort-insights', { method: 'POST' });
+                  const json = await res.json();
+                  setCohortData(json.data || json);
+                } catch { setCohortData({ error: 'Request failed' }); }
+                setCohortLoading(false);
+              }}
+              disabled={cohortLoading}
+              style={{
+                fontSize: 13, fontWeight: 500, padding: '10px 24px', borderRadius: 100,
+                border: 'none', cursor: cohortLoading ? 'not-allowed' : 'pointer',
+                background: '#2563EB', color: '#fff', marginBottom: 20,
+              }}
+            >
+              {cohortLoading ? 'Generating...' : 'Generate Monthly Insights'}
+            </button>
+            <a href="/insights" target="_blank" rel="noopener noreferrer" style={{
+              display: 'inline-block', marginLeft: 12, fontSize: 13, color: '#2563EB',
+            }}>
+              View Public Page →
+            </a>
+            {cohortData && (
+              <pre style={{
+                background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
+                borderRadius: 12, padding: 20, fontSize: 12, color: 'rgba(255,255,255,0.60)',
+                overflow: 'auto', maxHeight: 400,
+              }}>
+                {JSON.stringify(cohortData, null, 2)}
+              </pre>
+            )}
+          </div>
+        )}
 
         {/* Candidates Tab */}
         {adminTab === 'candidates' && (<>

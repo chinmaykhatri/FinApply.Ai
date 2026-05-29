@@ -63,9 +63,11 @@ export default function Navbar() {
   ];
 
   const pageLinks = [
+    { label: 'Try Free', href: '/practice' },
     { label: 'Deal Room', href: '/dealroom-explained' },
     { label: 'FISS Score', href: '/fiss-score' },
     { label: 'Employers', href: '/pricing' },
+    { label: 'Employer Demo', href: '/employer-demo' },
     { label: 'About', href: '/about' },
     { label: 'Founders', href: '/founders' },
   ];

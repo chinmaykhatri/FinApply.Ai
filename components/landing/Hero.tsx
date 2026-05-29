@@ -216,9 +216,12 @@ export default function Hero() {
         </p>
 
         {/* CTA */}
-        <div className="hero-cta" style={{ opacity: 0 }}>
+        <div className="hero-cta" style={{ opacity: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
           <PillButton variant="primary" onClick={handleCTA}>
             {isRegistered ? 'Go to Dashboard' : 'Get Started Free'}
+          </PillButton>
+          <PillButton variant="outline" href="/practice">
+            Try a Free Case →
           </PillButton>
         </div>
 
