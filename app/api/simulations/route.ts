@@ -95,11 +95,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to save simulation' }, { status: 500 });
     }
 
-    // 2. Update application status to submitted
-    await supabase
+    // 2. Update application status to submitted and fetch report_token + email for client
+    const { data: updatedApp } = await supabase
       .from('applications')
       .update({ status: 'submitted', updated_at: new Date().toISOString() })
-      .eq('id', application_id);
+      .eq('id', application_id)
+      .select('report_token, email')
+      .single();
 
     auditLog('admin.action', {
       action: 'simulation_submitted',
@@ -155,7 +157,14 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({ success: true, data: { id: sim.id } }, { status: 201 });
+    return NextResponse.json({
+      success: true,
+      data: {
+        id: sim.id,
+        report_token: updatedApp?.report_token || null,
+        email: updatedApp?.email || null,
+      },
+    }, { status: 201 });
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

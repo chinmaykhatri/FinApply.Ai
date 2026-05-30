@@ -43,6 +43,7 @@ export default function DealRoomPage() {
   const [phase, setPhase] = useState<'loading' | 'invalid' | 'briefing' | 'instructions' | 'warmup' | 'active' | 'submitted'>('loading');
   const [applicationId, setApplicationId] = useState<string>('');
   const [candidateName, setCandidateName] = useState<string>('');
+  const [reportToken, setReportToken] = useState<string>('');
   const [activeCase, setActiveCase] = useState<DealCase | null>(null);
   const [caseInstanceId, setCaseInstanceId] = useState<string>('');
   const [caseVariables, setCaseVariables] = useState<Record<string, number>>({});
@@ -379,8 +380,21 @@ export default function DealRoomPage() {
             typing_bursts: typingBursts,
           }),
         });
-        if (res.ok) success = true;
-        else retries--;
+        if (res.ok) {
+          success = true;
+          // Store report_token and email for dashboard access
+          try {
+            const json = await res.json();
+            if (json.data?.report_token) {
+              localStorage.setItem('fa_token', json.data.report_token);
+              localStorage.setItem('finapply_report_token', json.data.report_token);
+              setReportToken(json.data.report_token);
+            }
+            if (json.data?.email) {
+              localStorage.setItem('finapply_dashboard_email', json.data.email);
+            }
+          } catch { /* JSON parse failed — still treat as success */ }
+        } else retries--;
       } catch {
         retries--;
         if (retries > 0) await new Promise((r) => setTimeout(r, 2000));
@@ -702,7 +716,7 @@ export default function DealRoomPage() {
             <PillButton variant="secondary" href="/">
               Return to FinApply.ai
             </PillButton>
-            <PillButton variant="primary" href="/my-score">
+            <PillButton variant="primary" href={reportToken ? `/my-score?token=${reportToken}` : '/dashboard'}>
               View My Dashboard →
             </PillButton>
           </div>
