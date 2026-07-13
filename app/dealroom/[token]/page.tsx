@@ -44,6 +44,21 @@ export default function DealRoomPage() {
   const [applicationId, setApplicationId] = useState<string>('');
   const [candidateName, setCandidateName] = useState<string>('');
   const [reportToken, setReportToken] = useState<string>('');
+  // Score display state for submitted phase
+  const [fissScore, setFissScore] = useState<{
+    total: number;
+    financial_reasoning: { score: number; grade?: string };
+    structured_thinking: { score: number; grade?: string };
+    risk_identification: { score: number; grade?: string };
+    decision_clarity: { score: number; grade?: string };
+    evaluator_summary?: string;
+    standout_strength?: string;
+    critical_gap?: string;
+  } | null>(null);
+  const [scorePolling, setScorePolling] = useState(false);
+  const [retryingEval, setRetryingEval] = useState(false);
+  const [retryMessage, setRetryMessage] = useState('');
+  const submittedAtRef = useRef<number>(0);
   const [activeCase, setActiveCase] = useState<DealCase | null>(null);
   const [caseInstanceId, setCaseInstanceId] = useState<string>('');
   const [caseVariables, setCaseVariables] = useState<Record<string, number>>({});
@@ -91,6 +106,13 @@ export default function DealRoomPage() {
           setApplicationId(json.data.id);
           setCandidateName(json.data.full_name);
 
+          // Store report_token if returned (for scored users)
+          if (json.data.report_token) {
+            setReportToken(json.data.report_token);
+            localStorage.setItem('fa_token', json.data.report_token);
+            localStorage.setItem('finapply_report_token', json.data.report_token);
+          }
+
           // Store target role and assign a random case from that track
           const targetRole = json.data.target_role || 'Investment Banking Analyst';
           targetRoleRef.current = targetRole;
@@ -99,8 +121,9 @@ export default function DealRoomPage() {
           setCaseInstanceId(instance.instance_id);
           setCaseVariables(instance.generated_variables);
 
-          // Check if already submitted
+          // Check if already submitted or scored
           if (json.data.simulations && json.data.simulations.length > 0) {
+            submittedAtRef.current = Date.now();
             setPhase('submitted');
           } else {
             setPhase('briefing');
@@ -303,6 +326,93 @@ export default function DealRoomPage() {
     }, 1000);
     return () => clearInterval(interval);
   }, [phase]);
+
+  // ── SCORE POLLING: Check for FISS score after submission ──
+  useEffect(() => {
+    if (phase !== 'submitted' || !token || fissScore) return;
+    setScorePolling(true);
+
+    // Immediately check once
+    const checkScore = async () => {
+      try {
+        const res = await fetch(`/api/dealroom/${token}/score`);
+        const json = await res.json();
+        if (json.status === 'scored' && json.score) {
+          setFissScore(json.score);
+          setScorePolling(false);
+          if (json.report_token) {
+            setReportToken(json.report_token);
+            localStorage.setItem('fa_token', json.report_token);
+            localStorage.setItem('finapply_report_token', json.report_token);
+          }
+          return true; // score found
+        }
+        return false;
+      } catch {
+        return false;
+      }
+    };
+
+    checkScore(); // immediate first check
+
+    const interval = setInterval(async () => {
+      const found = await checkScore();
+      if (found) clearInterval(interval);
+    }, 10_000); // poll every 10 seconds
+
+    // Stop polling after 5 minutes
+    const timeout = setTimeout(() => {
+      clearInterval(interval);
+      setScorePolling(false);
+    }, 5 * 60 * 1000);
+
+    return () => {
+      clearInterval(interval);
+      clearTimeout(timeout);
+    };
+  }, [phase, token, fissScore]);
+
+  // Handle retry evaluation
+  const handleRetryEvaluation = async () => {
+    if (retryingEval) return;
+    setRetryingEval(true);
+    setRetryMessage('');
+    try {
+      const res = await fetch('/api/evaluate-retry', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          application_id: applicationId,
+          deal_room_token: token,
+        }),
+      });
+      const json = await res.json();
+      if (res.ok && json.success) {
+        setRetryMessage('Evaluation completed! Loading your score...');
+        // Re-check score after a short delay
+        setTimeout(async () => {
+          try {
+            const scoreRes = await fetch(`/api/dealroom/${token}/score`);
+            const scoreJson = await scoreRes.json();
+            if (scoreJson.status === 'scored' && scoreJson.score) {
+              setFissScore(scoreJson.score);
+              if (scoreJson.report_token) {
+                setReportToken(scoreJson.report_token);
+                localStorage.setItem('fa_token', scoreJson.report_token);
+                localStorage.setItem('finapply_report_token', scoreJson.report_token);
+              }
+            }
+          } catch { /* will retry on next poll */ }
+        }, 2000);
+      } else {
+        setRetryMessage(json.error || 'Retry failed — please try again');
+      }
+    } catch {
+      setRetryMessage('Network error — please try again');
+    } finally {
+      setRetryingEval(false);
+    }
+  };
 
   const formatTime = (s: number) => {
     const mins = Math.floor(s / 60);
@@ -676,49 +786,187 @@ export default function DealRoomPage() {
 
   // Submitted screen
   if (phase === 'submitted') {
+    const SCORE_DIMS = [
+      { key: 'financial_reasoning', label: 'Financial Reasoning', color: '#2563EB' },
+      { key: 'structured_thinking', label: 'Structured Thinking', color: '#7C3AED' },
+      { key: 'risk_identification', label: 'Risk Identification', color: '#D97706' },
+      { key: 'decision_clarity', label: 'Decision Clarity', color: '#16A34A' },
+    ] as const;
+
     return (
       <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-        <div style={{ maxWidth: 500, textAlign: 'center' }}>
+        <div style={{ maxWidth: 560, width: '100%', textAlign: 'center' }}>
           <div style={{ fontSize: 48, marginBottom: 24 }}>✅</div>
           <h1 style={{ fontSize: 32, fontWeight: 600, color: '#fff' }}>Simulation Complete</h1>
-          <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.60)', marginTop: 16, lineHeight: 1.6 }}>
-            Your analysis has been submitted. You wrote <strong style={{ color: '#fff' }}>{wordCount} words</strong> in{' '}
-            <strong style={{ color: '#fff' }}>{Math.round((TOTAL_TIME - timeLeft) / 60)} minutes</strong>.
-          </p>
-
-          {/* Auto-evaluation notice */}
-          <div style={{
-            marginTop: 28, padding: '16px 20px', borderRadius: 14,
-            background: 'rgba(22,163,74,0.06)', border: '1px solid rgba(22,163,74,0.15)',
-            textAlign: 'left',
-          }}>
-            <p style={{ fontSize: 13, fontWeight: 600, color: '#16A34A', marginBottom: 6 }}>🚀 Your FISS Score is being generated now</p>
-            <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.50)', lineHeight: 1.5, margin: 0 }}>
-              Our AI is evaluating your response right now. Your FISS Report will be emailed to you within <strong style={{ color: 'rgba(255,255,255,0.70)' }}>1-3 minutes</strong>.
-              Check your dashboard to see your score as soon as it&apos;s ready.
+          {wordCount > 0 && (
+            <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.60)', marginTop: 16, lineHeight: 1.6 }}>
+              Your analysis has been submitted. You wrote <strong style={{ color: '#fff' }}>{wordCount} words</strong> in{' '}
+              <strong style={{ color: '#fff' }}>{Math.round((TOTAL_TIME - timeLeft) / 60)} minutes</strong>.
             </p>
-          </div>
+          )}
 
-          {/* Improvement hint */}
-          <div style={{
-            marginTop: 12, padding: '16px 20px', borderRadius: 14,
-            background: 'rgba(37,99,235,0.06)', border: '1px solid rgba(37,99,235,0.15)',
-            textAlign: 'left',
-          }}>
-            <p style={{ fontSize: 13, fontWeight: 600, color: '#2563EB', marginBottom: 6 }}>💡 Want to improve?</p>
-            <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.50)', lineHeight: 1.5, margin: 0 }}>
-              After receiving your report, you can take another Deal Room simulation with a different role.
-              Your progress will be tracked across attempts so you can see how your skills improve.
-            </p>
-          </div>
+          {/* ── FISS SCORE CARD (shown when score is available) ── */}
+          {fissScore ? (
+            <>
+              <div style={{
+                marginTop: 28, padding: 32, borderRadius: 20,
+                background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.10)',
+              }}>
+                <p style={{ fontSize: 11, fontWeight: 500, color: 'rgba(255,255,255,0.40)', letterSpacing: 3, marginBottom: 16 }}>YOUR FISS SCORE</p>
+                <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 4 }}>
+                  <span style={{ fontSize: 64, fontWeight: 700, color: '#fff' }}>{fissScore.total}</span>
+                  <span style={{ fontSize: 24, color: 'rgba(255,255,255,0.30)' }}>/100</span>
+                </div>
 
+                {/* Dimension bars */}
+                <div style={{ marginTop: 28, display: 'flex', flexDirection: 'column', gap: 14, textAlign: 'left' }}>
+                  {SCORE_DIMS.map((dim) => {
+                    const dimData = fissScore[dim.key];
+                    const score = dimData?.score ?? 0;
+                    return (
+                      <div key={dim.key}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                          <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)' }}>{dim.label}</span>
+                          <span style={{ fontSize: 13, fontWeight: 600, color: dim.color, fontFamily: 'monospace' }}>
+                            {score}/25
+                            {dimData?.grade && (
+                              <span style={{ fontSize: 11, fontWeight: 400, color: 'rgba(255,255,255,0.35)', marginLeft: 8 }}>
+                                {dimData.grade}
+                              </span>
+                            )}
+                          </span>
+                        </div>
+                        <div style={{ height: 6, borderRadius: 3, background: 'rgba(255,255,255,0.08)' }}>
+                          <div style={{
+                            height: '100%', borderRadius: 3, background: dim.color,
+                            width: `${(score / 25) * 100}%`, transition: 'width 1s ease',
+                          }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Evaluator summary */}
+                {fissScore.evaluator_summary && (
+                  <div style={{
+                    marginTop: 24, padding: '14px 18px', borderRadius: 12,
+                    background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)',
+                    textAlign: 'left',
+                  }}>
+                    <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.50)', fontStyle: 'italic', lineHeight: 1.6, margin: 0 }}>
+                      &ldquo;{fissScore.evaluator_summary}&rdquo;
+                    </p>
+                  </div>
+                )}
+
+                {/* Standout & Gap */}
+                {(fissScore.standout_strength || fissScore.critical_gap) && (
+                  <div style={{ display: 'flex', gap: 12, marginTop: 16, textAlign: 'left' }}>
+                    {fissScore.standout_strength && (
+                      <div style={{ flex: 1, padding: '12px 16px', borderRadius: 10, background: 'rgba(22,163,74,0.06)', border: '1px solid rgba(22,163,74,0.12)' }}>
+                        <p style={{ fontSize: 11, fontWeight: 600, color: '#16A34A', marginBottom: 4 }}>🏆 Standout</p>
+                        <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.50)', margin: 0, lineHeight: 1.4 }}>{fissScore.standout_strength}</p>
+                      </div>
+                    )}
+                    {fissScore.critical_gap && (
+                      <div style={{ flex: 1, padding: '12px 16px', borderRadius: 10, background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.12)' }}>
+                        <p style={{ fontSize: 11, fontWeight: 600, color: '#EF4444', marginBottom: 4 }}>📍 Focus Area</p>
+                        <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.50)', margin: 0, lineHeight: 1.4 }}>{fissScore.critical_gap}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Email confirmation */}
+              <div style={{
+                marginTop: 16, padding: '12px 18px', borderRadius: 12,
+                background: 'rgba(22,163,74,0.06)', border: '1px solid rgba(22,163,74,0.12)',
+                textAlign: 'left',
+              }}>
+                <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.50)', margin: 0, lineHeight: 1.5 }}>
+                  📧 Your full FISS Report with PDF has been sent to your email.
+                </p>
+              </div>
+
+              {/* Improvement hint */}
+              <div style={{
+                marginTop: 12, padding: '14px 18px', borderRadius: 12,
+                background: 'rgba(37,99,235,0.06)', border: '1px solid rgba(37,99,235,0.12)',
+                textAlign: 'left',
+              }}>
+                <p style={{ fontSize: 13, fontWeight: 600, color: '#2563EB', marginBottom: 4 }}>💡 Want to improve?</p>
+                <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.50)', lineHeight: 1.5, margin: 0 }}>
+                  Take another Deal Room simulation with a different role. Your progress is tracked across attempts.
+                </p>
+              </div>
+            </>
+          ) : (
+            /* ── SCORE PENDING STATE ── */
+            <>
+              <div style={{
+                marginTop: 28, padding: '20px 24px', borderRadius: 14,
+                background: 'rgba(22,163,74,0.06)', border: '1px solid rgba(22,163,74,0.15)',
+                textAlign: 'left',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                  {scorePolling && <div className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }} />}
+                  <p style={{ fontSize: 14, fontWeight: 600, color: '#16A34A', margin: 0 }}>
+                    {scorePolling ? '🚀 Your FISS Score is being generated...' : '⏳ Score generation timed out'}
+                  </p>
+                </div>
+                <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.50)', lineHeight: 1.6, margin: 0 }}>
+                  {scorePolling
+                    ? 'Our AI is evaluating your response right now. Your score will appear here automatically within 1-3 minutes. Your FISS Report will also be emailed to you.'
+                    : 'The evaluation is taking longer than expected. Click below to retry, or check your email and dashboard later.'}
+                </p>
+              </div>
+
+              {/* Retry button — show after 30 seconds */}
+              {(!scorePolling || Date.now() - submittedAtRef.current > 30_000) && (
+                <div style={{ marginTop: 16, textAlign: 'center' }}>
+                  <button
+                    onClick={handleRetryEvaluation}
+                    disabled={retryingEval}
+                    style={{
+                      padding: '10px 24px', borderRadius: 100, fontSize: 13,
+                      fontWeight: 600, cursor: retryingEval ? 'not-allowed' : 'pointer',
+                      background: 'rgba(37,99,235,0.10)',
+                      border: '1px solid rgba(37,99,235,0.25)',
+                      color: '#2563EB', transition: 'all 200ms ease',
+                      opacity: retryingEval ? 0.6 : 1,
+                    }}
+                  >
+                    {retryingEval ? '⏳ Running evaluation...' : '⚡ Generate Report Now'}
+                  </button>
+                  {retryMessage && (
+                    <p style={{
+                      fontSize: 12, marginTop: 10,
+                      color: retryMessage.includes('failed') || retryMessage.includes('error') ? '#EF4444' : '#16A34A',
+                    }}>
+                      {retryMessage}
+                    </p>
+                  )}
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Navigation buttons */}
           <div style={{ marginTop: 32, display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
             <PillButton variant="secondary" href="/">
               Return to FinApply.ai
             </PillButton>
-            <PillButton variant="primary" href={reportToken ? `/my-score?token=${reportToken}` : '/dashboard'}>
-              View My Dashboard →
-            </PillButton>
+            {fissScore && reportToken ? (
+              <PillButton variant="primary" href={`/report/${reportToken}`}>
+                View Full Report →
+              </PillButton>
+            ) : (
+              <PillButton variant="primary" href={reportToken ? `/my-score?token=${reportToken}` : '/dashboard'}>
+                View My Dashboard →
+              </PillButton>
+            )}
           </div>
         </div>
       </div>

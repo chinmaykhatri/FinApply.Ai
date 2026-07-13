@@ -37,6 +37,7 @@ export async function GET(
         full_name,
         target_role,
         status,
+        report_token,
         created_at,
         simulations (id, case_code, submitted_at)
       `)
@@ -47,14 +48,24 @@ export async function GET(
       return NextResponse.json({ error: 'Invalid or expired token' }, { status: 404 });
     }
 
-    // Allow access for registered, approved, or submitted users
-    const allowedStatuses = ['applied', 'dealroom_sent', 'submitted'];
+    // Allow access for registered, approved, submitted, scored, and report_sent users
+    // Scored/report_sent users returning to their link should see their score
+    const allowedStatuses = ['applied', 'dealroom_sent', 'submitted', 'scored', 'report_sent', 'eval_failed'];
     if (!allowedStatuses.includes(app.status)) {
       return NextResponse.json({ error: 'Deal room access not available' }, { status: 403 });
     }
 
-    // SECURITY: never return report_token, deal_room_token, or email in response
-    return NextResponse.json({ data: app });
+    // Build safe response — include report_token only for scored users
+    const { report_token, ...safeApp } = app;
+    const isScoredOrSent = ['scored', 'report_sent'].includes(app.status);
+
+    return NextResponse.json({
+      data: {
+        ...safeApp,
+        // Only expose report_token when the report exists
+        report_token: isScoredOrSent ? report_token : undefined,
+      },
+    });
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

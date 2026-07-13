@@ -28,6 +28,7 @@ interface AppData {
   has_deal_room: boolean;
   has_report: boolean;
   deal_room_token?: string;
+  report_token?: string;
   created_at: string;
   updated_at: string;
   report: {
@@ -660,10 +661,18 @@ export default function DashboardPage() {
 
                       {/* Show Report button if scored */}
                       {hasReport && app.has_report && (() => {
+                        // Use report_token from API response first, then fall back to localStorage
+                        const apiToken = app.report_token;
                         const savedToken = typeof window !== 'undefined' ? localStorage.getItem('finapply_report_token') : null;
-                        if (savedToken) {
+                        const reportToken = apiToken || savedToken;
+                        if (reportToken) {
+                          // Sync to localStorage for future visits
+                          if (apiToken && typeof window !== 'undefined') {
+                            localStorage.setItem('finapply_report_token', apiToken);
+                            localStorage.setItem('fa_token', apiToken);
+                          }
                           return (
-                            <PillButton variant="primary" href={`/report/${savedToken}`}>
+                            <PillButton variant="primary" href={`/report/${reportToken}`}>
                               View FISS Report →
                             </PillButton>
                           );
